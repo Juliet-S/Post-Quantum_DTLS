@@ -1,0 +1,1 @@
+add_executable(${PROJECT_NAME} main.c verification.c dtls.c server.c hashtable.c)
