@@ -1,0 +1,9 @@
+﻿.idea/
+
+Benchmarking/bin
+Benchmarking/obj
+
+WinTools/DTLS/certs
+
+DTLS/cmake-build-debug
+DTLS/cmake-build-release
