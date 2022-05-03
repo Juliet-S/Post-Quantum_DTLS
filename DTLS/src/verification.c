@@ -1,9 +1,5 @@
 #include <openssl/ssl.h>
 
-#ifndef WIN32
- #include <memory.h>
-#endif
-
 #include "verification.h"
 
 static const char* get_sigtype(int nid) {

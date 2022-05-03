@@ -20,15 +20,19 @@ int main(int argc, char** argv)
     const char* certFile = "certs/clientA.crt";
     const char* privateKey = "certs/clientA.key";
 
+#if WIN32
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
+#endif
 
     init_server(&server, cipher, certChain, certFile, privateKey);
-    connection_setup(&server, port, tablesize, (void *(*)(void *)) &free_client);
+    connection_setup(&server, port, tablesize, (void*(*)(void*))&free_client);
     connection_loop(&server);
     free_server(&server);
 
+#if WIN32
     WSACleanup();
+#endif
 
     return 0;
 }

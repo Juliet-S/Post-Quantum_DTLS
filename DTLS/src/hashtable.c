@@ -1,6 +1,7 @@
 #include <stdlib.h>
-#include <vcruntime_string.h>
 #include <stdio.h>
+#include <memory.h>
+
 #include "hashtable.h"
 
 hashtable* new_hashtable(unsigned int size)

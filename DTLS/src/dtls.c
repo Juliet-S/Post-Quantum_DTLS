@@ -3,7 +3,7 @@
 #if WIN32
  #include <WinSock2.h>
 #else
- #include <sys/Socket.h>
+ #include <unistd.h>
 #endif
 
 #include <openssl/err.h>

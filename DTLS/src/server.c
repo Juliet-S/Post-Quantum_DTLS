@@ -6,7 +6,7 @@
  #include <WS2tcpip.h>
 #else
  #include <unistd.h>
- #include <memory.h>
+ #include <arpa/inet.h>
 #endif
 
 #include "server.h"
@@ -208,6 +208,7 @@ void connection_loop(dtlsServer* server)
             {
                 fprintf(stderr, "recvlen = %d", recvlen);
                 remove_item(server->connections, hash_connection(address, port), client);
+                break;
             }
 
             printf("%s\n", packetBuffer);
