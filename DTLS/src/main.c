@@ -14,7 +14,7 @@ int main(int argc, char** argv)
     signal(SIGINT, interrupt_handler);
 
     const int port = 8443;
-    const unsigned int tablesize = 2;
+    const unsigned int tablesize = 100;
     const char* cipher = "TLS_RSA_WITH_AES_128_GCM_SHA256";
     const char* certChain = "certs/bundle.pem";
     const char* certFile = "certs/clientA.crt";
