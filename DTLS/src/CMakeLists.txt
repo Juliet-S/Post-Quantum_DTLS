@@ -1,1 +1,2 @@
-add_executable(${PROJECT_NAME} main.c verification.c dtls.c server.c hashtable.c)
+add_subdirectory(server)
+add_subdirectory(client)
