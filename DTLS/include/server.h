@@ -18,12 +18,12 @@ typedef int socklen_t;
 
 void err(const char* msg);
 
-void init_server(dtlsServer* server, const char* cipher, const char* certChain, const char* certFile, const char* privKey);
-void connection_setup(dtlsServer* server, int port, unsigned int connectionTableSize, void* free_func(void *));
+void init_server(DtlsServer* server, const char* cipher, const char* certChain, const char* certFile, const char* privKey);
+void connection_setup(DtlsServer* server, int port, unsigned int connectionTableSize, void* free_func(void *));
 int new_socket(const struct sockaddr* bindingAddress);
 
-void connection_loop(dtlsServer* server);
+void connection_loop(DtlsServer* server);
 
-int dtls_server_accept(dtlsServer* server);
+int dtls_server_accept(DtlsServer* server);
 
 #endif // PQDTLS_SERVER_H

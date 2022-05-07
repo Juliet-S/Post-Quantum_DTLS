@@ -59,12 +59,12 @@ int new_socket(const struct sockaddr* bindingAddress)
 /**
  * Get client info from a socket
  *
- * @param server dtlsServer struct                [in]
+ * @param server DtlsServer struct                [in]
  * @param clientSocket Pointer to sockaddr struct [in]
  * @param address IPv4 formatted address string   [out]
  * @param port port number                        [out]
  */
-void get_client_info(dtlsServer* server, struct sockaddr* clientSocket, char* address, int* port)
+void get_client_info(DtlsServer* server, struct sockaddr* clientSocket, char* address, int* port)
 {
     int length = sizeof(struct sockaddr);
     memset(clientSocket, 0, length);
@@ -76,14 +76,14 @@ void get_client_info(dtlsServer* server, struct sockaddr* clientSocket, char* ad
     *port = ntohs(((struct sockaddr_in*)clientSocket)->sin_port);
 }
 
-dtlsClient* get_client(dtlsServer* server, const char* address, int port)
+DtlsClient* get_client(DtlsServer* server, const char* address, int port)
 {
     node* current = get_bucket(server->connections, hash_connection(address, port));
 
-    dtlsClient* client = NULL;
+    DtlsClient* client = NULL;
     if (current != NULL) {
         while (current != NULL) {
-            dtlsClient* tmp = (dtlsClient*)(current->data);
+            DtlsClient* tmp = (DtlsClient*)(current->data);
             if (tmp->port == port && (strcmp(tmp->address, address) == 0))
             {
                 client = tmp;
@@ -101,9 +101,9 @@ dtlsClient* get_client(dtlsServer* server, const char* address, int port)
  *
  * @param server Uninitialized server struct
  */
-void init_server(dtlsServer* server, const char* cipher, const char* certChain, const char* certFile, const char* privKey)
+void init_server(DtlsServer* server, const char* cipher, const char* certChain, const char* certFile, const char* privKey)
 {
-    memset(server, 0, sizeof(dtlsServer));
+    memset(server, 0, sizeof(DtlsServer));
 
     SSL_load_error_strings(); /* readable error messages */
     SSL_library_init(); /* initialize library */
@@ -139,7 +139,7 @@ void init_server(dtlsServer* server, const char* cipher, const char* certChain, 
  *
  * @param server
  */
-void connection_setup(dtlsServer* server, int port, unsigned int connectionTableSize, void* freeFunc(void*))
+void connection_setup(DtlsServer* server, int port, unsigned int connectionTableSize, void* freeFunc(void*))
 {
     sockAddress serverAddr;
     memset(&serverAddr, 0, sizeof(struct sockaddr_in));
@@ -164,7 +164,7 @@ void connection_setup(dtlsServer* server, int port, unsigned int connectionTable
  *
  * @param server
  */
-void connection_loop(dtlsServer* server)
+void connection_loop(DtlsServer* server)
 {
     // Incoming connection handling
     struct sockaddr clientSocket;
@@ -178,11 +178,11 @@ void connection_loop(dtlsServer* server)
     fd_set readset;
 
     struct timeval timeout;
-    timeout.tv_sec = 1;
-    timeout.tv_usec = 0;
-
     while(server->isRunning)
     {
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
+
         FD_ZERO(&readset);
         FD_SET(server->socket, &readset);
 
@@ -196,7 +196,7 @@ void connection_loop(dtlsServer* server)
         }
 
         get_client_info(server, &clientSocket, address, &port);
-        dtlsClient* client = get_client(server, address, port);
+        DtlsClient* client = get_client(server, address, port);
 
         if (client != NULL)
         {
@@ -212,7 +212,7 @@ void connection_loop(dtlsServer* server)
             }
 
             printf("%s\n", packetBuffer);
-            remove_item(server->connections, hash_connection(address, port), client);
+            //remove_item(server->connections, hash_connection(address, port), client);
             printf("== Disconnected client %s:%d ==\n", address, port);
         }
         else {
@@ -228,10 +228,10 @@ void connection_loop(dtlsServer* server)
  * @param client Client struct to initialize on connected
  * @return 1 on accepted, <= 0 otherwise
  */
-int dtls_server_accept(dtlsServer* server)
+int dtls_server_accept(DtlsServer* server)
 {
-    dtlsClient* client = malloc(sizeof(dtlsClient));
-    memset(client, 0, sizeof(dtlsClient));
+    DtlsClient* client = malloc(sizeof(DtlsClient));
+    memset(client, 0, sizeof(DtlsClient));
 
     BIO* clientBio = BIO_new_dgram(server->socket, BIO_NOCLOSE);
 

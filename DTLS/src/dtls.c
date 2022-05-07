@@ -43,7 +43,7 @@ static int check_ssl_read(SSL* ssl, char* buffer, int len)
     return ret;
 }
 
-int client_recv(dtlsClient* client, void* buffer, int size)
+int client_recv(DtlsClient* client, void* buffer, int size)
 {
     int length = SSL_read(client->ssl, buffer, size);
     return check_ssl_read(client->ssl, buffer, length);
@@ -62,7 +62,7 @@ size_t hash_connection(const char* str, int port)
     return hash;
 }
 
-void free_server(dtlsServer* server)
+void free_server(DtlsServer* server)
 {
 #if WIN32
     closesocket(server->socket);
@@ -75,7 +75,7 @@ void free_server(dtlsServer* server)
     server->ctx = NULL;
 }
 
-void free_client(dtlsClient* client)
+void free_client(DtlsClient* client)
 {
     SSL_shutdown(client->ssl);
     SSL_free(client->ssl);

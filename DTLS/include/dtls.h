@@ -13,7 +13,6 @@
 #include <openssl/ssl.h>
 #include "hashtable.h"
 
-//Maybe
 typedef union sockAddress_t {
     struct sockaddr_storage ss;
     struct sockaddr_in6 s6;
@@ -27,19 +26,19 @@ typedef struct dtlsServer_t {
     int socket;
     int timeoutSeconds;
     hashtable* connections;
-} dtlsServer;
+} DtlsServer;
 
 typedef struct dtlsClient_t {
     SSL *ssl;
     int port;
     char address[INET_ADDRSTRLEN];
-} dtlsClient;
+} DtlsClient;
 
-int client_recv(dtlsClient* client, void* buffer, int size);
+int client_recv(DtlsClient* client, void* buffer, int size);
 
 size_t hash_connection(const char* str, int port);
 
-void free_server(dtlsServer* server);
-void free_client(dtlsClient* client);
+void free_server(DtlsServer* server);
+void free_client(DtlsClient* client);
 
 #endif // PQDTLS_DTLS_H
