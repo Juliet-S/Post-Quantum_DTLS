@@ -3,7 +3,17 @@ Compile for ARM64 Prerequisites:
     2. Cross compile libs installed (dpkg --add-architecture <arch>) <arch> = arm64 in this case
 
 1. cd openssl
-2. sudo make clean
+2. make clean
 3. ./Configure linux-aarch64 --cross-compile-prefix=aarch64-linux-gnu- --prefix=/usr/local/sslarm64 --openssldir=/usr/local/sslarm64 '-Wl,-rpath,$(LIBRPATH)' -static --static
-4. sudo make -j<#cores>
+4. make -j<#cores>
+5. sudo make install
+
+Compile for ARMHF Preqrequisites:
+    1. Linux with `arm-linux-gnueabi-{gcc,g++}` installed (Windows just use WSL2)
+    2. Cross compile libs installed (dpkg --add-architecture <arch>) <arch> = arm64 in this case
+
+1. cd openssl
+2. make clean
+3. sudo ./Configure linux-armv4 --cross-compile-prefix=arm-linux-gnueabi- --prefix=/usr/local/sslarmhf --openssldir=/usr/local/sslarmhf '-Wl,-rpath,$(LIBRPATH)' -static --static
+4. make -j<#cores>
 5. sudo make install
