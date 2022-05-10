@@ -17,8 +17,8 @@ int main(int argc, char** argv)
     const unsigned int tablesize = 100;
     const char* cipher = "TLS_RSA_WITH_AES_128_GCM_SHA256";
     const char* certChain = "certs/bundle.pem";
-    const char* certFile = "certs/clientA.crt";
-    const char* privateKey = "certs/clientA.key";
+    const char* certFile = "certs/clientC.crt";
+    const char* privateKey = "certs/clientC.key";
 
 #if WIN32
     WSADATA wsaData;

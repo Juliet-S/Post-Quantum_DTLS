@@ -114,9 +114,10 @@ void init_server(DtlsServer* server, const char* cipher, const char* certChain, 
     SSL_CTX_set_min_proto_version(ctx, DTLS1_2_VERSION);
     SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_OFF);
 
-    if (!SSL_CTX_use_certificate_chain_file(ctx, certChain)) {
-        err("No certificate chain found");
+    if (!certChain || !SSL_CTX_load_verify_locations(ctx, certChain, NULL) || !SSL_CTX_set_default_verify_paths(ctx)) {
+        err("No or invalid certificate chain");
     }
+    SSL_CTX_set_client_CA_list(ctx, SSL_load_client_CA_file(certChain));
 
     if (!SSL_CTX_use_certificate_file(ctx, certFile, SSL_FILETYPE_PEM)) {
         err("No certificate chain found");
