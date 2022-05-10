@@ -9,8 +9,8 @@
  #include <arpa/inet.h>
 #endif
 
-#include "server.h"
-#include "verification.h"
+#include "server/server.h"
+#include "server/verification.h"
 
 /**
  * Print error message and exit program

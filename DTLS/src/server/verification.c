@@ -1,6 +1,6 @@
 #include <openssl/ssl.h>
 
-#include "verification.h"
+#include "server/verification.h"
 
 static const char* get_sigtype(int nid) {
     switch (nid) {

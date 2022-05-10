@@ -1,6 +1,6 @@
 ﻿#include <signal.h>
 
-#include "server.h"
+#include "server/server.h"
 
 DtlsServer server;
 
