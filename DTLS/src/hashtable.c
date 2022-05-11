@@ -6,9 +6,8 @@
 
 hashtable* new_hashtable(unsigned int size)
 {
-    hashtable* table = malloc(sizeof(hashtable));
-    node** nodes = malloc(sizeof(node*) * size);
-    memset(nodes, 0, sizeof(node*) * size);
+    hashtable* table = calloc(1, sizeof(hashtable));
+    node** nodes = calloc(size, sizeof(node*));
     table->data = nodes;
     table->size = size;
 

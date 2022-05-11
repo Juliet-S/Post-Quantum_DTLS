@@ -26,7 +26,7 @@ int main(int argc, char** argv)
 #endif
 
     init_server(&server, cipher, certChain, certFile, privateKey);
-    connection_setup(&server, port, tablesize, (void*(*)(void*))&free_client);
+    connection_setup(&server, port, tablesize, (void*(*)(void*)) &free_connection);
     connection_loop(&server);
     free_server(&server);
 

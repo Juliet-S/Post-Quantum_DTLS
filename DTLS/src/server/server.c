@@ -60,40 +60,40 @@ int new_socket(const struct sockaddr* bindingAddress)
  * Get client info from a socket
  *
  * @param server DtlsServer struct                [in]
- * @param clientSocket Pointer to sockaddr struct [in]
+ * @param connectionSocket Pointer to sockaddr struct [in]
  * @param address IPv4 formatted address string   [out]
  * @param port port number                        [out]
  */
-void get_client_info(DtlsServer* server, struct sockaddr* clientSocket, char* address, int* port)
+void get_connection_info(DtlsServer* server, struct sockaddr* connectionSocket, char* address, int* port)
 {
     int length = sizeof(struct sockaddr);
-    memset(clientSocket, 0, length);
+    memset(connectionSocket, 0, length);
     memset(address, '\0', INET_ADDRSTRLEN);
 
     // This returns -1 due to read message being larger than buffer of size 0
-    recvfrom(server->socket, NULL, 0, MSG_PEEK, clientSocket, &length);
-    inet_ntop(AF_INET, &((struct sockaddr_in*)clientSocket)->sin_addr, address, INET_ADDRSTRLEN);
-    *port = ntohs(((struct sockaddr_in*)clientSocket)->sin_port);
+    recvfrom(server->socket, NULL, 0, MSG_PEEK, connectionSocket, &length);
+    inet_ntop(AF_INET, &((struct sockaddr_in*)connectionSocket)->sin_addr, address, INET_ADDRSTRLEN);
+    *port = ntohs(((struct sockaddr_in*)connectionSocket)->sin_port);
 }
 
-DtlsClient* get_client(DtlsServer* server, const char* address, int port)
+DtlsConnection* get_connection(DtlsServer* server, const char* address, int port)
 {
     node* current = get_bucket(server->connections, hash_connection(address, port));
 
-    DtlsClient* client = NULL;
+    DtlsConnection* connection = NULL;
     if (current != NULL) {
         while (current != NULL) {
-            DtlsClient* tmp = (DtlsClient*)(current->data);
+            DtlsConnection* tmp = (DtlsConnection*)(current->data);
             if (tmp->port == port && (strcmp(tmp->address, address) == 0))
             {
-                client = tmp;
+                connection = tmp;
                 break;
             }
             current = current->next;
         }
     }
 
-    return client;
+    return connection;
 }
 
 /**
@@ -142,7 +142,7 @@ void init_server(DtlsServer* server, const char* cipher, const char* certChain, 
  */
 void connection_setup(DtlsServer* server, int port, unsigned int connectionTableSize, void* freeFunc(void*))
 {
-    sockAddress serverAddr;
+    SockAddress serverAddr;
     memset(&serverAddr, 0, sizeof(struct sockaddr_in));
 
     serverAddr.s4.sin_family = AF_INET;
@@ -196,19 +196,19 @@ void connection_loop(DtlsServer* server)
             break;
         }
 
-        get_client_info(server, &clientSocket, address, &port);
-        DtlsClient* client = get_client(server, address, port);
+        get_connection_info(server, &clientSocket, address, &port);
+        DtlsConnection* connection = get_connection(server, address, port);
 
-        if (client != NULL)
+        if (connection != NULL)
         {
             memset(packetBuffer, 0, MAX_PACKET_SIZE);
             printf("== New datagram from %s:%d ==\n", address, port);
 
-            int recvlen = client_recv(client, packetBuffer, MAX_PACKET_SIZE);
+            int recvlen = connection_recv(connection, packetBuffer, MAX_PACKET_SIZE);
             if (recvlen <= 0)
             {
                 fprintf(stderr, "recvlen = %d", recvlen);
-                remove_item(server->connections, hash_connection(address, port), client);
+                remove_item(server->connections, hash_connection(address, port), connection);
                 break;
             }
 
@@ -231,8 +231,7 @@ void connection_loop(DtlsServer* server)
  */
 int dtls_server_accept(DtlsServer* server)
 {
-    DtlsClient* client = malloc(sizeof(DtlsClient));
-    memset(client, 0, sizeof(DtlsClient));
+    DtlsConnection* connection = calloc(1, sizeof(DtlsConnection));
 
     BIO* clientBio = BIO_new_dgram(server->socket, BIO_NOCLOSE);
 
@@ -241,13 +240,13 @@ int dtls_server_accept(DtlsServer* server)
     timeout.tv_usec = 0;
     BIO_ctrl(clientBio, BIO_CTRL_DGRAM_SET_RECV_TIMEOUT, 0, &timeout);
 
-    client->ssl = SSL_new(server->ctx);
-    SSL_set_bio(client->ssl, clientBio, clientBio);
-    SSL_set_options(client->ssl, SSL_OP_COOKIE_EXCHANGE);
+    connection->ssl = SSL_new(server->ctx);
+    SSL_set_bio(connection->ssl, clientBio, clientBio);
+    SSL_set_options(connection->ssl, SSL_OP_COOKIE_EXCHANGE);
 
-    sockAddress clientAddr;
-    if (DTLSv1_listen(client->ssl, (BIO_ADDR*)&clientAddr) <= 0) {
-        free_client(client);
+    SockAddress clientAddr;
+    if (DTLSv1_listen(connection->ssl, (BIO_ADDR*)&clientAddr) <= 0) {
+        free_connection(connection);
         return -1;
     } // Wait for ClientHello + Reply + Cookie
 
@@ -255,7 +254,7 @@ int dtls_server_accept(DtlsServer* server)
     int ret;
     do
     {
-        ret = SSL_accept(client->ssl);
+        ret = SSL_accept(connection->ssl);
     } while (ret == 0);
 
     if (ret < 0)
@@ -263,20 +262,19 @@ int dtls_server_accept(DtlsServer* server)
         char buffer[256];
         ERR_error_string_n(ERR_get_error(), buffer, 256);
         fprintf(stderr, "%s", buffer);
-        free_client(client);
+        free_connection(connection);
         return -1;
     }
 
-    inet_ntop(AF_INET, &((struct sockaddr_in*)&clientAddr)->sin_addr, client->address, INET_ADDRSTRLEN);
-    client->port = ntohs(((struct sockaddr_in*)&clientAddr)->sin_port);
+    inet_ntop(AF_INET, &((struct sockaddr_in*)&clientAddr)->sin_addr, connection->address, INET_ADDRSTRLEN);
+    connection->port = ntohs(((struct sockaddr_in*)&clientAddr)->sin_port);
 
-    printf("New connection from %s:%d with hash of (%zu)\n", client->address, client->port, hash_connection(client->address, client->port) % server->connections->size);
-    print_ssl_summary(client->ssl);
+    printf("New connection from %s:%d with hash of (%zu)\n", connection->address, connection->port, hash_connection(connection->address, connection->port) % server->connections->size);
+    print_ssl_summary(connection->ssl);
 
-    node* clientNode = malloc(sizeof(node));
-    memset(clientNode, 0, sizeof(node));
-    clientNode->data = (void*)client;
-    add_item(server->connections, hash_connection(client->address, client->port), clientNode);
+    node* clientNode = calloc(1, sizeof(node));
+    clientNode->data = (void*)connection;
+    add_item(server->connections, hash_connection(connection->address, connection->port), clientNode);
 
     return 1;
 }

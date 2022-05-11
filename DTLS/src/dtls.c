@@ -36,17 +36,17 @@ static int check_ssl_read(SSL* ssl, char* buffer, int len)
             break;
 
         default:
-            printf("Unexpected error while reading!\n");
+            fprintf(stderr, "Unexpected error while reading!\n");
             break;
     }
 
     return ret;
 }
 
-int client_recv(DtlsClient* client, void* buffer, int size)
+int connection_recv(DtlsConnection* connection, void* buffer, int size)
 {
-    int length = SSL_read(client->ssl, buffer, size);
-    return check_ssl_read(client->ssl, buffer, length);
+    int length = SSL_read(connection->ssl, buffer, size);
+    return check_ssl_read(connection->ssl, buffer, length);
 }
 
 size_t hash_connection(const char* str, int port)
@@ -75,9 +75,9 @@ void free_server(DtlsServer* server)
     server->ctx = NULL;
 }
 
-void free_client(DtlsClient* client)
+void free_connection(DtlsConnection* connection)
 {
-    SSL_shutdown(client->ssl);
-    SSL_free(client->ssl);
-    client->ssl = NULL;
+    SSL_shutdown(connection->ssl);
+    SSL_free(connection->ssl);
+    connection->ssl = NULL;
 }
