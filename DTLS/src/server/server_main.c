@@ -2,7 +2,7 @@
 
 #include "server/server.h"
 
-DtlsServer server;
+DtlsServer server = {0};
 
 static void interrupt_handler(int _) {
     (void)_;

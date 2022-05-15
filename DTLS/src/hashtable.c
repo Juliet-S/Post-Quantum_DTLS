@@ -1,6 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <memory.h>
+#if WIN32
+#else
+ #include <memory.h>
+#endif
 
 #include "hashtable.h"
 

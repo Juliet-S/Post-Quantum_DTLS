@@ -67,8 +67,6 @@ DtlsConnection* get_connection(DtlsServer* server, const char* address, int port
  */
 void init_server(DtlsServer* server, const char* cipher, const char* certChain, const char* certFile, const char* privKey, int mode)
 {
-    memset(server, 0, sizeof(DtlsServer));
-
     SSL_load_error_strings(); /* readable error messages */
     SSL_library_init(); /* initialize library */
 
@@ -106,13 +104,11 @@ void init_server(DtlsServer* server, const char* cipher, const char* certChain, 
  */
 void connection_setup(DtlsServer* server, int port, unsigned int connectionTableSize, void* freeFunc(void*))
 {
-    SockAddress serverAddr;
-    memset(&serverAddr, 0, sizeof(struct sockaddr_in));
-
-    serverAddr.s4.sin_family = AF_INET;
-    serverAddr.s4.sin_addr.s_addr = htonl(INADDR_ANY);
-    serverAddr.s4.sin_port = htons(port);
-
+    SockAddress serverAddr = {
+        .s4.sin_family = AF_INET,
+        .s4.sin_addr.s_addr = htonl(INADDR_ANY),
+        .s4.sin_port = htons(port)
+    };
     memcpy(&server->local, &serverAddr, sizeof(struct sockaddr_in));
     server->timeoutSeconds = 5;
     server->socket = new_socket((const struct sockaddr*)&serverAddr);
@@ -132,8 +128,7 @@ void connection_setup(DtlsServer* server, int port, unsigned int connectionTable
 void connection_loop(DtlsServer* server)
 {
     // Incoming connection handling
-    struct sockaddr clientSocket;
-    memset(&clientSocket, 0, sizeof(struct sockaddr));
+    struct sockaddr clientSocket = {0};
     char packetBuffer[1500];
     char address[INET_ADDRSTRLEN];
     int port;
@@ -197,16 +192,17 @@ int dtls_server_accept(DtlsServer* server)
 
     BIO* clientBio = BIO_new_dgram(server->socket, BIO_NOCLOSE);
 
-    struct timeval timeout;
-    timeout.tv_sec = 1;
-    timeout.tv_usec = 0;
+    struct timeval timeout = {
+        .tv_sec = 1,
+        .tv_usec = 0
+    };
     BIO_ctrl(clientBio, BIO_CTRL_DGRAM_SET_RECV_TIMEOUT, 0, &timeout);
 
     connection->ssl = SSL_new(server->ctx);
     SSL_set_bio(connection->ssl, clientBio, clientBio);
     SSL_set_options(connection->ssl, SSL_OP_COOKIE_EXCHANGE);
 
-    SockAddress clientAddr;
+    SockAddress clientAddr = {0};
     if (DTLSv1_listen(connection->ssl, (BIO_ADDR*)&clientAddr) <= 0) {
         free_connection(connection);
         return -1;

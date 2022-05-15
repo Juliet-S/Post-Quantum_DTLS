@@ -37,7 +37,7 @@ static const char* get_sigtype(int nid) {
 }
 
 void print_ssl_summary(SSL* s) {
-    const SSL_CIPHER *c;
+    const SSL_CIPHER* c;
     X509 *peer;
 
     printf("\tProtocol version: %s\n", SSL_get_version(s));

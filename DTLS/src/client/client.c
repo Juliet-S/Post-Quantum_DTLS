@@ -15,8 +15,6 @@
 
 void init_client(DtlsClient* client, const char* clientCert, const char* clientKey)
 {
-    memset(client, 0, sizeof(DtlsClient));
-
     SSL_load_error_strings(); /* readable error messages */
     SSL_library_init(); /* initialize library */
 
@@ -53,16 +51,17 @@ void init_client(DtlsClient* client, const char* clientCert, const char* clientK
 int connection_setup(DtlsClient* client, const char* address, int port)
 {
     int ret;
-    SockAddress local;
-    memset(&local, 0, sizeof(struct sockaddr_storage));
-    local.s4.sin_family = AF_INET;
-    local.s4.sin_addr.s_addr = htonl(INADDR_ANY);
-    local.s4.sin_port = htons(0);
+    SockAddress local = {
+        .s4.sin_family = AF_INET,
+        .s4.sin_addr.s_addr = htonl(INADDR_ANY),
+        .s4.sin_port = htons(0),
+    };
 
-    SockAddress remote;
-    memset(&remote, 0, sizeof(struct sockaddr_storage));
-    remote.s4.sin_family = AF_INET;
-    remote.s4.sin_port = htons(port);
+    SockAddress remote = {
+        .s4.sin_family = AF_INET,
+        .s4.sin_port = htons(port)
+    };
+
     if (inet_pton(AF_INET, address, &remote.s4.sin_addr) != 1) {
         err("IP Address parse error");
     }
@@ -83,9 +82,10 @@ int connection_setup(DtlsClient* client, const char* address, int port)
     }
 
     /* Set and activate timeouts */
-    struct timeval timeout;
-    timeout.tv_sec = 3;
-    timeout.tv_usec = 0;
+    struct timeval timeout = {
+        .tv_sec = 3,
+        .tv_usec = 0
+    };
     BIO_ctrl(bio, BIO_CTRL_DGRAM_SET_RECV_TIMEOUT, 0, &timeout);
 
     client->ssl = ssl;

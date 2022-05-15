@@ -18,7 +18,7 @@ int main(int argc, char** argv)
     time_t start;
     time_t end;
 
-    DtlsClient client;
+    DtlsClient client = {0};
     const char* address = "127.0.0.1";
     const int port = 8443;
 
