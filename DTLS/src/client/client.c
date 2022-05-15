@@ -11,6 +11,7 @@
 #endif
 
 #include "client/client.h"
+#include "client/cverify.h"
 #include "dtls.h"
 
 void init_client(DtlsClient* client, const char* clientCert, const char* clientKey)
@@ -91,6 +92,8 @@ int connection_setup(DtlsClient* client, const char* address, int port)
     client->ssl = ssl;
     client->bio = bio;
     client->socket = fd;
+
+    print_server_info(client);
 
     return ret;
 }

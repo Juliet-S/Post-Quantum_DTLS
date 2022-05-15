@@ -1,1 +1,1 @@
-add_executable(${PROJECT_NAME}_client client_main.c client.c ../dtls.c)
+add_executable(${PROJECT_NAME}_client client_main.c client.c cverify.c ../dtls.c)

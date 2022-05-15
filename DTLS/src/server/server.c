@@ -10,7 +10,7 @@
 #endif
 
 #include "server/server.h"
-#include "server/verification.h"
+#include "server/sverify.h"
 
 /**
  * Get client info from a socket
