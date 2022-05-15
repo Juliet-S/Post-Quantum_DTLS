@@ -8,7 +8,18 @@
 
 #include <openssl/err.h>
 
-static int check_ssl_read(SSL* ssl, char* buffer, int len)
+/**
+ * Print error message and exit program
+ *
+ * @param msg Error message
+ */
+void err(const char* msg)
+{
+    fprintf(stderr, "ERROR: %s\n", msg);
+    exit(EXIT_FAILURE);
+}
+
+int check_ssl_read(SSL* ssl, char* buffer, int len)
 {
     int ret = -1;
 
@@ -43,10 +54,37 @@ static int check_ssl_read(SSL* ssl, char* buffer, int len)
     return ret;
 }
 
-int connection_recv(DtlsConnection* connection, void* buffer, int size)
+/**
+ * Create a new socket and bind to binding address
+ *
+ * @param bindingAddress Address to bind to
+ * @return Socket file descriptor (int)
+ */
+int new_socket(const struct sockaddr* bindingAddress)
 {
-    int length = SSL_read(connection->ssl, buffer, size);
-    return check_ssl_read(connection->ssl, buffer, length);
+    const int on = 1;
+    const int off = 0;
+    int fd;
+
+    if((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+        err("Socket creation");
+    }
+
+    if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, (socklen_t) sizeof(on)) < 0) {
+        err("Reuse address");
+    }
+
+#if defined(SO_REUSEPORT) && !defined(__linux__)
+    if(setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, (const void*)&on, (socklen_t) sizeof(on)) < 0) {
+        err("Reuse port");
+    }
+#endif
+
+    if(bind(fd, bindingAddress, sizeof(struct sockaddr_in)) < 0) {
+        err("Binding address");
+    }
+
+    return fd;
 }
 
 size_t hash_connection(const char* str, int port)
@@ -60,24 +98,4 @@ size_t hash_connection(const char* str, int port)
     hash ^= port + 0x9e3779b9 + (hash << 6) + (hash >> 2);
 
     return hash;
-}
-
-void free_server(DtlsServer* server)
-{
-#if WIN32
-    closesocket(server->socket);
-#else
-    close(server->socket);
-#endif
-    server->socket = -1;
-    free_hashtable(server->connections);
-    SSL_CTX_free(server->ctx);
-    server->ctx = NULL;
-}
-
-void free_connection(DtlsConnection* connection)
-{
-    SSL_shutdown(connection->ssl);
-    SSL_free(connection->ssl);
-    connection->ssl = NULL;
 }

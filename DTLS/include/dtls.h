@@ -4,6 +4,7 @@
 #if WIN32
  #include <WinSock2.h>
  #include <ws2ipdef.h>
+ typedef int socklen_t;
 #else
  #include <unistd.h>
  #include <sys/socket.h>
@@ -19,26 +20,11 @@ typedef union sockAddress_t {
     struct sockaddr_in s4;
 } SockAddress;
 
-typedef struct dtlsServer_t {
-    int isRunning;
-    SSL_CTX* ctx;
-    SockAddress local;
-    int socket;
-    int timeoutSeconds;
-    hashtable* connections;
-} DtlsServer;
+void err(const char* msg);
+int check_ssl_read(SSL* ssl, char* buffer, int len);
 
-typedef struct dtlsConnection_t {
-    SSL* ssl;
-    int port;
-    char address[INET_ADDRSTRLEN];
-} DtlsConnection;
-
-int connection_recv(DtlsConnection* connection, void* buffer, int size);
+int new_socket(const struct sockaddr* bindingAddress);
 
 size_t hash_connection(const char* str, int port);
-
-void free_server(DtlsServer* server);
-void free_connection(DtlsConnection* connection);
 
 #endif // PQDTLS_DTLS_H

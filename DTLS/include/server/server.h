@@ -4,8 +4,6 @@
 #if WIN32
  #include <winsock2.h>
  #include <ws2ipdef.h>
-
-typedef int socklen_t;
 #else
  #include <unistd.h>
  #include <sys/socket.h>
@@ -16,14 +14,30 @@ typedef int socklen_t;
 
 #define MAX_PACKET_SIZE 1500
 
-void err(const char* msg);
+typedef struct dtlsServer_t {
+    int isRunning;
+    SSL_CTX* ctx;
+    SockAddress local;
+    int socket;
+    int timeoutSeconds;
+    hashtable* connections;
+} DtlsServer;
 
-void init_server(DtlsServer* server, const char* cipher, const char* certChain, const char* certFile, const char* privKey);
+typedef struct dtlsConnection_t {
+    SSL* ssl;
+    int port;
+    char address[INET_ADDRSTRLEN];
+} DtlsConnection;
+
+void init_server(DtlsServer* server, const char* cipher, const char* certChain, const char* certFile, const char* privKey, int mode);
 void connection_setup(DtlsServer* server, int port, unsigned int connectionTableSize, void* free_func(void *));
-int new_socket(const struct sockaddr* bindingAddress);
 
 void connection_loop(DtlsServer* server);
 
 int dtls_server_accept(DtlsServer* server);
+
+int connection_recv(DtlsConnection* connection, void* buffer, int size);
+void free_server(DtlsServer* server);
+void free_connection(DtlsConnection* connection);
 
 #endif // PQDTLS_SERVER_H

@@ -25,7 +25,7 @@ int main(int argc, char** argv)
     WSAStartup(MAKEWORD(2, 2), &wsaData);
 #endif
 
-    init_server(&server, cipher, certChain, certFile, privateKey);
+    init_server(&server, cipher, certChain, certFile, privateKey, SSL_VERIFY_NONE);
     connection_setup(&server, port, tablesize, (void*(*)(void*)) &free_connection);
     connection_loop(&server);
     free_server(&server);

@@ -13,50 +13,6 @@
 #include "server/verification.h"
 
 /**
- * Print error message and exit program
- *
- * @param msg Error message
- */
-void err(const char* msg)
-{
-    fprintf(stderr, "ERROR: %s\n", msg);
-    exit(EXIT_FAILURE);
-}
-
-/**
- * Create a new socket and bind to binding address
- *
- * @param bindingAddress Address to bind to
- * @return Socket file descriptor (int)
- */
-int new_socket(const struct sockaddr* bindingAddress)
-{
-    const int on = 1;
-    const int off = 0;
-    int fd;
-
-    if((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        err("Socket creation");
-    }
-
-    if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, (socklen_t) sizeof(on)) < 0) {
-        err("Reuse address");
-    }
-
-#if defined(SO_REUSEPORT) && !defined(__linux__)
-    if(setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, (const void*)&on, (socklen_t) sizeof(on)) < 0) {
-        err("Reuse port");
-    }
-#endif
-
-    if(bind(fd, bindingAddress, sizeof(struct sockaddr_in)) < 0) {
-        err("Binding address");
-    }
-
-    return fd;
-}
-
-/**
  * Get client info from a socket
  *
  * @param server DtlsServer struct                [in]
@@ -101,7 +57,7 @@ DtlsConnection* get_connection(DtlsServer* server, const char* address, int port
  *
  * @param server Uninitialized server struct
  */
-void init_server(DtlsServer* server, const char* cipher, const char* certChain, const char* certFile, const char* privKey)
+void init_server(DtlsServer* server, const char* cipher, const char* certChain, const char* certFile, const char* privKey, int mode)
 {
     memset(server, 0, sizeof(DtlsServer));
 
@@ -128,7 +84,7 @@ void init_server(DtlsServer* server, const char* cipher, const char* certChain, 
     }
 
     SSL_CTX_set_read_ahead(ctx, 1);
-    SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, verify_cert);
+    SSL_CTX_set_verify(ctx, mode, verify_cert);
     SSL_CTX_set_cookie_generate_cb(ctx, generate_cookie);
     SSL_CTX_set_cookie_verify_cb(ctx, &verify_cookie);
 
@@ -277,4 +233,30 @@ int dtls_server_accept(DtlsServer* server)
     add_item(server->connections, hash_connection(connection->address, connection->port), clientNode);
 
     return 1;
+}
+
+int connection_recv(DtlsConnection* connection, void* buffer, int size)
+{
+    int length = SSL_read(connection->ssl, buffer, size);
+    return check_ssl_read(connection->ssl, buffer, length);
+}
+
+void free_server(DtlsServer* server)
+{
+#if WIN32
+    closesocket(server->socket);
+#else
+    close(server->socket);
+#endif
+    server->socket = -1;
+    free_hashtable(server->connections);
+    SSL_CTX_free(server->ctx);
+    server->ctx = NULL;
+}
+
+void free_connection(DtlsConnection* connection)
+{
+    SSL_shutdown(connection->ssl);
+    SSL_free(connection->ssl);
+    connection->ssl = NULL;
 }
