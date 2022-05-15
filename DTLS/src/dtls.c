@@ -84,6 +84,10 @@ int new_socket(const struct sockaddr* bindingAddress)
         err("Binding address");
     }
 
+    if (fd < 0) {
+        err("Socket creation error");
+    }
+
     return fd;
 }
 

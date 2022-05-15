@@ -21,7 +21,7 @@ int main(int argc, char** argv)
 
     init_client(&client, NULL, NULL);
     connection_setup(&client, address, port);
-
+    connection_loop(&client);
     free_client(&client);
 
 #if WIN32

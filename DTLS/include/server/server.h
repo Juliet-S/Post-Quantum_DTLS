@@ -12,8 +12,6 @@
 
 #include "dtls.h"
 
-#define MAX_PACKET_SIZE 1500
-
 typedef struct dtlsServer_t {
     int isRunning;
     SSL_CTX* ctx;

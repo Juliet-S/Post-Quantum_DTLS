@@ -32,6 +32,14 @@ void get_connection_info(DtlsServer* server, struct sockaddr* connectionSocket, 
     *port = ntohs(((struct sockaddr_in*)connectionSocket)->sin_port);
 }
 
+/**
+ * Retrieve connection if exists
+ *
+ * @param server
+ * @param address Address of client
+ * @param port Port of client
+ * @return DTLSConnection if exists, NULL otherwise
+ */
 DtlsConnection* get_connection(DtlsServer* server, const char* address, int port)
 {
     node* current = get_bucket(server->connections, hash_connection(address, port));
@@ -158,19 +166,17 @@ void connection_loop(DtlsServer* server)
         if (connection != NULL)
         {
             memset(packetBuffer, 0, MAX_PACKET_SIZE);
-            printf("== New datagram from %s:%d ==\n", address, port);
-
             int recvlen = connection_recv(connection, packetBuffer, MAX_PACKET_SIZE);
             if (recvlen <= 0)
             {
-                fprintf(stderr, "recvlen = %d", recvlen);
+                fprintf(stderr, "%s:%d> Disconnected (recvlen = %d)\n", address, port, recvlen);
                 remove_item(server->connections, hash_connection(address, port), connection);
-                break;
+                continue;
             }
 
-            printf("%s\n", packetBuffer);
+            printf("%s:%d> %s\n", address, port, packetBuffer);
             //remove_item(server->connections, hash_connection(address, port), client);
-            printf("== Disconnected client %s:%d ==\n", address, port);
+            //printf("== Disconnected client %s:%d ==\n", address, port);
         }
         else {
             dtls_server_accept(server);

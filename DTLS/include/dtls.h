@@ -11,6 +11,8 @@
  #include <netinet/in.h>
 #endif
 
+#define MAX_PACKET_SIZE 1500
+
 #include <openssl/ssl.h>
 #include "hashtable.h"
 
