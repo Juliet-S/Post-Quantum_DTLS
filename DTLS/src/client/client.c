@@ -4,6 +4,9 @@
 #if WIN32
  #include <WS2tcpip.h>
 #else
+ #include <unistd.h>
+ #include <sys/socket.h>
+ #include <arpa/inet.h>
 
 #endif
 
@@ -99,7 +102,11 @@ void connection_loop(DtlsClient* client)
     while (!(SSL_get_shutdown(client->ssl) & SSL_RECEIVED_SHUTDOWN)) {
         // TODO CLIENT SEND AND RECV
         client_send(client, sendBuffer, MAX_PACKET_SIZE);
+#if WIN32
         Sleep(1000);
+#else
+        sleep(1);
+#endif
     }
 }
 

@@ -15,12 +15,20 @@ int main(int argc, char** argv)
     WSAStartup(MAKEWORD(2, 2), &wsaData);
 #endif
 
+    time_t start;
+    time_t end;
+
     DtlsClient client;
     const char* address = "127.0.0.1";
     const int port = 8443;
 
     init_client(&client, NULL, NULL);
+
+    time(&start);
     connection_setup(&client, address, port);
+    time(&end);
+    printf("%f\n", difftime(end, start));
+
     connection_loop(&client);
     free_client(&client);
 
