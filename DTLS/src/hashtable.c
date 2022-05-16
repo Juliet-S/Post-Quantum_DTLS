@@ -7,7 +7,7 @@
 
 #include "hashtable.h"
 
-hashtable* new_hashtable(unsigned int size)
+hashtable* hashtable_new(unsigned int size)
 {
     hashtable* table = calloc(1, sizeof(hashtable));
     node** nodes = calloc(size, sizeof(node*));
@@ -17,7 +17,7 @@ hashtable* new_hashtable(unsigned int size)
     return table;
 }
 
-void free_hashtable(hashtable* table)
+void hashtable_free(hashtable* table)
 {
     for (size_t i = 0; i < table->size; i++) {
         node* current = table->data[i];
@@ -38,12 +38,12 @@ void free_hashtable(hashtable* table)
     free(table);
 }
 
-node* get_bucket(hashtable* table, size_t hash)
+node* hashtable_get(hashtable* table, size_t hash)
 {
     return table->data[hash % table->size];
 }
 
-void add_item(hashtable* table, size_t hash, node* item)
+void hashtable_add(hashtable* table, size_t hash, node* item)
 {
     node* current = table->data[hash % table->size];
     if (current == NULL) {
@@ -58,7 +58,7 @@ void add_item(hashtable* table, size_t hash, node* item)
     current->next = item;
 }
 
-void remove_item(hashtable* table, size_t hash, void* item)
+void hashtable_remove(hashtable* table, size_t hash, void* item)
 {
     node* current = table->data[hash % table->size];
     if (current == NULL) {

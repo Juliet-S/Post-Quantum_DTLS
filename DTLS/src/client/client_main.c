@@ -19,15 +19,15 @@ int main(int argc, char** argv)
     const char* address = "127.0.0.1";
     const int port = 8443;
 
-    init_client(&client, NULL, NULL);
+    client_init(&client, "certs/clientA.crt", "certs/clientA.key");
 
     double startTime = (double)clock() / CLOCKS_PER_SEC;
-    connection_setup(&client, address, port);
+    client_connection_setup(&client, address, port);
     double endTime = (double)clock() / CLOCKS_PER_SEC;
     printf("%lf\n", endTime - startTime);
 
-    connection_loop(&client);
-    free_client(&client);
+    client_connection_loop(&client);
+    client_free(&client);
 
 #if WIN32
     WSACleanup();

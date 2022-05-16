@@ -13,13 +13,13 @@ typedef struct dtlsClient_h {
     int socket;
 } DtlsClient;
 
-void init_client(DtlsClient* client, const char* clientCert, const char* clientKey);
-int connection_setup(DtlsClient* client, const char* address, int port);
-void connection_loop(DtlsClient* client);
+void client_init(DtlsClient* client, const char* clientCert, const char* clientKey);
+int client_connection_setup(DtlsClient* client, const char* address, int port);
+void client_connection_loop(DtlsClient* client);
 
 int client_recv(DtlsClient* client, char* buffer, int size);
 int client_send(DtlsClient* client, char* buffer, int size);
 
-void free_client(DtlsClient* client);
+void client_free(DtlsClient* client);
 
 #endif // PQDTLS_CLIENT_H

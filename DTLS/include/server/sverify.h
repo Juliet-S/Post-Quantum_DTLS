@@ -3,11 +3,9 @@
 
 #include <openssl/ssl.h>
 
-void print_ssl_summary(SSL* con);
+int sverify_cert(int ok, X509_STORE_CTX *ctx);
 
-int verify_cert(int ok, X509_STORE_CTX *ctx);
-
-int generate_cookie(SSL* ssl, unsigned char* cookie, unsigned int* cookie_len);
-int verify_cookie(SSL* ssl, const unsigned char* cookie, unsigned int cookie_len);
+int sverify_generate_cookie(SSL* ssl, unsigned char* cookie, unsigned int* cookie_len);
+int sverify_cookie(SSL* ssl, const unsigned char* cookie, unsigned int cookie_len);
 
 #endif // PQDTLS_SVERIFY_H

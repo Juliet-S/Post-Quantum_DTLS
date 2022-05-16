@@ -27,15 +27,15 @@ typedef struct dtlsConnection_t {
     char address[INET_ADDRSTRLEN];
 } DtlsConnection;
 
-void init_server(DtlsServer* server, const char* cipher, const char* certChain, const char* certFile, const char* privKey, int mode);
-void connection_setup(DtlsServer* server, int port, unsigned int connectionTableSize, void* free_func(void *));
+void server_init(DtlsServer* server, const char* cipher, const char* certChain, const char* certFile, const char* privKey, int mode);
+void server_connection_setup(DtlsServer* server, int port, unsigned int connectionTableSize, void* free_func(void *));
 
-void connection_loop(DtlsServer* server);
+void server_connection_loop(DtlsServer* server);
 
-int dtls_server_accept(DtlsServer* server);
+int server_dtls_accept(DtlsServer* server);
 
-int connection_recv(DtlsConnection* connection, void* buffer, int size);
-void free_server(DtlsServer* server);
-void free_connection(DtlsConnection* connection);
+int server_recv(DtlsConnection* connection, void* buffer, int size);
+void server_free(DtlsServer* server);
+void server_connection_free(DtlsConnection* connection);
 
 #endif // PQDTLS_SERVER_H

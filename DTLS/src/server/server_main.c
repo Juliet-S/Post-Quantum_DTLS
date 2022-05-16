@@ -25,10 +25,10 @@ int main(int argc, char** argv)
     WSAStartup(MAKEWORD(2, 2), &wsaData);
 #endif
 
-    init_server(&server, cipher, certChain, certFile, privateKey, SSL_VERIFY_NONE);
-    connection_setup(&server, port, tablesize, (void*(*)(void*)) &free_connection);
-    connection_loop(&server);
-    free_server(&server);
+    server_init(&server, cipher, certChain, certFile, privateKey, SSL_VERIFY_NONE);
+    server_connection_setup(&server, port, tablesize, (void *(*)(void *)) &server_connection_free);
+    server_connection_loop(&server);
+    server_free(&server);
 
 #if WIN32
     WSACleanup();

@@ -7,14 +7,13 @@
  #include <unistd.h>
  #include <sys/socket.h>
  #include <arpa/inet.h>
-
 #endif
 
 #include "client/client.h"
-#include "client/cverify.h"
 #include "dtls.h"
+#include "info.h"
 
-void init_client(DtlsClient* client, const char* clientCert, const char* clientKey)
+void client_init(DtlsClient* client, const char* clientCert, const char* clientKey)
 {
     SSL_load_error_strings(); /* readable error messages */
     SSL_library_init(); /* initialize library */
@@ -49,7 +48,7 @@ void init_client(DtlsClient* client, const char* clientCert, const char* clientK
  * @param port
  * @return 0 on success, nonzero otherwise
  */
-int connection_setup(DtlsClient* client, const char* address, int port)
+int client_connection_setup(DtlsClient* client, const char* address, int port)
 {
     int ret;
     SockAddress local = {
@@ -93,12 +92,12 @@ int connection_setup(DtlsClient* client, const char* address, int port)
     client->bio = bio;
     client->socket = fd;
 
-    print_server_info(client);
+    info_print_server_summary(client);
 
     return ret;
 }
 
-void connection_loop(DtlsClient* client)
+void client_connection_loop(DtlsClient* client)
 {
     char sendBuffer[MAX_PACKET_SIZE] = "Hello World\0";
     char writeBuffer[MAX_PACKET_SIZE] = {0};
@@ -125,7 +124,7 @@ int client_send(DtlsClient* client, char* buffer, int size)
     return 0;
 }
 
-void free_client(DtlsClient* client)
+void client_free(DtlsClient* client)
 {
 #if WIN32
     closesocket(client->socket);

@@ -11,6 +11,7 @@
 
 #include "server/server.h"
 #include "server/sverify.h"
+#include "info.h"
 
 /**
  * Get client info from a socket
@@ -42,7 +43,7 @@ void get_connection_info(DtlsServer* server, struct sockaddr* connectionSocket, 
  */
 DtlsConnection* get_connection(DtlsServer* server, const char* address, int port)
 {
-    node* current = get_bucket(server->connections, hash_connection(address, port));
+    node* current = hashtable_get(server->connections, hash_connection(address, port));
 
     DtlsConnection* connection = NULL;
     if (current != NULL) {
@@ -65,7 +66,7 @@ DtlsConnection* get_connection(DtlsServer* server, const char* address, int port
  *
  * @param server Uninitialized server struct
  */
-void init_server(DtlsServer* server, const char* cipher, const char* certChain, const char* certFile, const char* privKey, int mode)
+void server_init(DtlsServer* server, const char* cipher, const char* certChain, const char* certFile, const char* privKey, int mode)
 {
     SSL_load_error_strings(); /* readable error messages */
     SSL_library_init(); /* initialize library */
@@ -90,9 +91,9 @@ void init_server(DtlsServer* server, const char* cipher, const char* certChain, 
     }
 
     SSL_CTX_set_read_ahead(ctx, 1);
-    SSL_CTX_set_verify(ctx, mode, verify_cert);
-    SSL_CTX_set_cookie_generate_cb(ctx, generate_cookie);
-    SSL_CTX_set_cookie_verify_cb(ctx, &verify_cookie);
+    SSL_CTX_set_verify(ctx, mode, sverify_cert);
+    SSL_CTX_set_cookie_generate_cb(ctx, sverify_generate_cookie);
+    SSL_CTX_set_cookie_verify_cb(ctx, &sverify_cookie);
 
     server->ctx = ctx;
 }
@@ -102,7 +103,7 @@ void init_server(DtlsServer* server, const char* cipher, const char* certChain, 
  *
  * @param server
  */
-void connection_setup(DtlsServer* server, int port, unsigned int connectionTableSize, void* freeFunc(void*))
+void server_connection_setup(DtlsServer* server, int port, unsigned int connectionTableSize, void* free_func(void*))
 {
     SockAddress serverAddr = {
         .s4.sin_family = AF_INET,
@@ -113,8 +114,8 @@ void connection_setup(DtlsServer* server, int port, unsigned int connectionTable
     server->timeoutSeconds = 5;
     server->socket = new_socket((const struct sockaddr*)&serverAddr);
 
-    hashtable* table = new_hashtable(connectionTableSize);
-    table->free_func = freeFunc;
+    hashtable* table = hashtable_new(connectionTableSize);
+    table->free_func = free_func;
     server->connections = table;
 
     server->isRunning = 1;
@@ -125,7 +126,7 @@ void connection_setup(DtlsServer* server, int port, unsigned int connectionTable
  *
  * @param server
  */
-void connection_loop(DtlsServer* server)
+void server_connection_loop(DtlsServer* server)
 {
     // Incoming connection handling
     struct sockaddr clientSocket = {0};
@@ -161,11 +162,11 @@ void connection_loop(DtlsServer* server)
         if (connection != NULL)
         {
             memset(packetBuffer, 0, MAX_PACKET_SIZE);
-            int recvlen = connection_recv(connection, packetBuffer, MAX_PACKET_SIZE);
+            int recvlen = server_recv(connection, packetBuffer, MAX_PACKET_SIZE);
             if (recvlen <= 0)
             {
                 fprintf(stderr, "%s:%d> Disconnected (recvlen = %d)\n", address, port, recvlen);
-                remove_item(server->connections, hash_connection(address, port), connection);
+                hashtable_remove(server->connections, hash_connection(address, port), connection);
                 continue;
             }
 
@@ -174,7 +175,7 @@ void connection_loop(DtlsServer* server)
             //printf("== Disconnected client %s:%d ==\n", address, port);
         }
         else {
-            dtls_server_accept(server);
+            server_dtls_accept(server);
         }
     }
 }
@@ -186,7 +187,7 @@ void connection_loop(DtlsServer* server)
  * @param client Client struct to initialize on connected
  * @return 1 on accepted, <= 0 otherwise
  */
-int dtls_server_accept(DtlsServer* server)
+int server_dtls_accept(DtlsServer* server)
 {
     DtlsConnection* connection = calloc(1, sizeof(DtlsConnection));
 
@@ -204,7 +205,7 @@ int dtls_server_accept(DtlsServer* server)
 
     SockAddress clientAddr = {0};
     if (DTLSv1_listen(connection->ssl, (BIO_ADDR*)&clientAddr) <= 0) {
-        free_connection(connection);
+        server_connection_free(connection);
         return -1;
     } // Wait for ClientHello + Reply + Cookie
 
@@ -220,7 +221,7 @@ int dtls_server_accept(DtlsServer* server)
         char buffer[256];
         ERR_error_string_n(ERR_get_error(), buffer, 256);
         fprintf(stderr, "%s", buffer);
-        free_connection(connection);
+        server_connection_free(connection);
         return -1;
     }
 
@@ -228,22 +229,22 @@ int dtls_server_accept(DtlsServer* server)
     connection->port = ntohs(((struct sockaddr_in*)&clientAddr)->sin_port);
 
     printf("New connection from %s:%d with hash of (%zu)\n", connection->address, connection->port, hash_connection(connection->address, connection->port) % server->connections->size);
-    print_ssl_summary(connection->ssl);
+    info_print_ssl_summary(connection->ssl);
 
     node* clientNode = calloc(1, sizeof(node));
     clientNode->data = (void*)connection;
-    add_item(server->connections, hash_connection(connection->address, connection->port), clientNode);
+    hashtable_add(server->connections, hash_connection(connection->address, connection->port), clientNode);
 
     return 1;
 }
 
-int connection_recv(DtlsConnection* connection, void* buffer, int size)
+int server_recv(DtlsConnection* connection, void* buffer, int size)
 {
     int length = SSL_read(connection->ssl, buffer, size);
     return check_ssl_read(connection->ssl, buffer, length);
 }
 
-void free_server(DtlsServer* server)
+void server_free(DtlsServer* server)
 {
 #if WIN32
     closesocket(server->socket);
@@ -251,12 +252,12 @@ void free_server(DtlsServer* server)
     close(server->socket);
 #endif
     server->socket = -1;
-    free_hashtable(server->connections);
+    hashtable_free(server->connections);
     SSL_CTX_free(server->ctx);
     server->ctx = NULL;
 }
 
-void free_connection(DtlsConnection* connection)
+void server_connection_free(DtlsConnection* connection)
 {
     SSL_shutdown(connection->ssl);
     SSL_free(connection->ssl);

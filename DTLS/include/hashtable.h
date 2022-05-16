@@ -12,11 +12,11 @@ typedef struct hashtable_t {
     node** data;
 } hashtable;
 
-hashtable* new_hashtable(unsigned int size);
-void free_hashtable(hashtable* table);
+hashtable* hashtable_new(unsigned int size);
+void hashtable_free(hashtable* table);
 
-node* get_bucket(hashtable* table, size_t hash);
-void add_item(hashtable* table, size_t hash, node* item);
-void remove_item(hashtable* table, size_t hash, void* item);
+node* hashtable_get(hashtable* table, size_t hash);
+void hashtable_add(hashtable* table, size_t hash, node* item);
+void hashtable_remove(hashtable* table, size_t hash, void* item);
 
 #endif // PQDTLS_HASHTABLE_H
