@@ -91,7 +91,7 @@ void server_init(DtlsServer* server, const char* cipher, const char* certChain, 
     }
 
     SSL_CTX_set_read_ahead(ctx, 1);
-    SSL_CTX_set_verify(ctx, mode, sverify_cert);
+    SSL_CTX_set_verify(ctx, mode, NULL);
     SSL_CTX_set_cookie_generate_cb(ctx, sverify_generate_cookie);
     SSL_CTX_set_cookie_verify_cb(ctx, &sverify_cookie);
 
@@ -220,7 +220,7 @@ int server_dtls_accept(DtlsServer* server)
     {
         char buffer[256];
         ERR_error_string_n(ERR_get_error(), buffer, 256);
-        fprintf(stderr, "%s", buffer);
+        fprintf(stderr, "%s\n", buffer);
         server_connection_free(connection);
         return -1;
     }

@@ -3,8 +3,6 @@
 
 #include <openssl/ssl.h>
 
-int sverify_cert(int ok, X509_STORE_CTX *ctx);
-
 int sverify_generate_cookie(SSL* ssl, unsigned char* cookie, unsigned int* cookie_len);
 int sverify_cookie(SSL* ssl, const unsigned char* cookie, unsigned int cookie_len);
 

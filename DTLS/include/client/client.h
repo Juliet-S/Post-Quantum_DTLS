@@ -13,7 +13,7 @@ typedef struct dtlsClient_h {
     int socket;
 } DtlsClient;
 
-void client_init(DtlsClient* client, const char* clientCert, const char* clientKey);
+void client_init(DtlsClient* client, const char* certChain, const char* clientCert, const char* clientKey, int mode);
 int client_connection_setup(DtlsClient* client, const char* address, int port);
 void client_connection_loop(DtlsClient* client);
 

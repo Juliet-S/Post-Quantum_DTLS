@@ -9,11 +9,13 @@
  #include <arpa/inet.h>
 #endif
 
+#include <openssl/err.h>
+
 #include "client/client.h"
 #include "dtls.h"
 #include "info.h"
 
-void client_init(DtlsClient* client, const char* clientCert, const char* clientKey)
+void client_init(DtlsClient* client, const char* certChain, const char* clientCert, const char* clientKey, int mode)
 {
     SSL_load_error_strings(); /* readable error messages */
     SSL_library_init(); /* initialize library */
@@ -34,10 +36,20 @@ void client_init(DtlsClient* client, const char* clientCert, const char* clientK
         usingCert = 0;
     }
 
-    if (usingCert && !SSL_CTX_check_private_key (ctx))
+    if (usingCert && !SSL_CTX_check_private_key (ctx)) {
         err("Invalid private key");
+    }
+
+    if (usingCert && (!certChain || !SSL_CTX_load_verify_locations(ctx, certChain, NULL) || !SSL_CTX_set_default_verify_paths(ctx))) {
+        err("No or invalid certificate chain");
+    }
+
+    if (usingCert && certChain) {
+        SSL_CTX_set_client_CA_list(ctx, SSL_load_client_CA_file(certChain));
+    }
 
     SSL_CTX_set_read_ahead(ctx, 1);
+    SSL_CTX_set_verify(ctx, mode, NULL);
     client->ctx = ctx;
 }
 
@@ -78,6 +90,9 @@ int client_connection_setup(DtlsClient* client, const char* address, int port)
 
     ret = SSL_connect(ssl);
     if (ret <= 0) {
+        char buffer[256];
+        ERR_error_string_n(ERR_get_error(), buffer, 256);
+        fprintf(stderr, "%s\n", buffer);
         err("SSL Connection failed");
     }
 
