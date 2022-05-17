@@ -162,17 +162,16 @@ void server_connection_loop(DtlsServer* server)
         if (connection != NULL)
         {
             memset(packetBuffer, 0, MAX_PACKET_SIZE);
-            int recvlen = server_recv(connection, packetBuffer, MAX_PACKET_SIZE);
-            if (recvlen <= 0)
+            int recvlen = dtls_recv(connection->ssl, packetBuffer, MAX_PACKET_SIZE);
+            if (SSL_get_shutdown(connection->ssl) || recvlen <= 0)
             {
-                fprintf(stderr, "%s:%d> Disconnected (recvlen = %d)\n", address, port, recvlen);
+                fprintf(stdout, "%s:%d> Disconnected (recvlen = %d)\n", address, port, recvlen);
                 hashtable_remove(server->connections, hash_connection(address, port), connection);
                 continue;
             }
 
             printf("%s:%d> %s\n", address, port, packetBuffer);
-            //remove_item(server->connections, hash_connection(address, port), client);
-            //printf("== Disconnected client %s:%d ==\n", address, port);
+            dtls_send(connection->ssl, packetBuffer, strnlen_s(packetBuffer, MAX_PACKET_SIZE));
         }
         else {
             server_dtls_accept(server);
@@ -236,12 +235,6 @@ int server_dtls_accept(DtlsServer* server)
     hashtable_add(server->connections, hash_connection(connection->address, connection->port), clientNode);
 
     return 1;
-}
-
-int server_recv(DtlsConnection* connection, void* buffer, int size)
-{
-    int length = SSL_read(connection->ssl, buffer, size);
-    return check_ssl_read(connection->ssl, buffer, length);
 }
 
 void server_free(DtlsServer* server)

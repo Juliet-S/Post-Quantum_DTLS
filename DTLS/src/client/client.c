@@ -106,6 +106,7 @@ int client_connection_setup(DtlsClient* client, const char* address, int port)
     client->ssl = ssl;
     client->bio = bio;
     client->socket = fd;
+    client->remote = remote;
 
     info_print_server_summary(client);
 
@@ -114,29 +115,51 @@ int client_connection_setup(DtlsClient* client, const char* address, int port)
 
 void client_connection_loop(DtlsClient* client)
 {
+    char address[INET_ADDRSTRLEN] = {0};
+    int port;
+    client_get_connection_info(client, address, &port);
+
+    // Select
+    int selRet;
+    fd_set readset;
+    struct timeval timeout;
+
     char sendBuffer[MAX_PACKET_SIZE] = "Hello World\0";
-    char writeBuffer[MAX_PACKET_SIZE] = {0};
-    while (!(SSL_get_shutdown(client->ssl) & SSL_RECEIVED_SHUTDOWN)) {
-        // TODO CLIENT SEND AND RECV
-        client_send(client, sendBuffer, MAX_PACKET_SIZE);
-#if WIN32
-        Sleep(1000);
-#else
-        sleep(1);
-#endif
+    char recvBuffer[MAX_PACKET_SIZE] = {0};
+    while (!(SSL_get_shutdown(client->ssl) & SSL_RECEIVED_SHUTDOWN))
+    {
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
+
+        FD_ZERO(&readset);
+        FD_SET(client->socket, &readset);
+
+        if (dtls_send(client->ssl, sendBuffer, strnlen_s(sendBuffer, MAX_PACKET_SIZE)) != 1) {
+            break;
+        }
+
+        selRet = select(FD_SETSIZE, &readset, NULL, NULL, &timeout);
+        if (selRet == 0) {
+            continue;
+        }
+        else if (selRet < 0) {
+            fprintf(stderr,"Select error...\n");
+            break;
+        }
+
+        if (dtls_recv(client->ssl, recvBuffer, MAX_PACKET_SIZE) != 1) {
+            break;
+        }
+
+        printf("%s:%d> %s\n", address, port, recvBuffer);
     }
 }
 
-int client_recv(DtlsClient* client, char* buffer, int size)
+void client_get_connection_info(DtlsClient* client, char* address, int* port)
 {
-    int length = SSL_read(client->ssl, buffer, size);
-    return check_ssl_read(client->ssl, buffer, length);
-}
-
-int client_send(DtlsClient* client, char* buffer, int size)
-{
-    SSL_write(client->ssl, buffer, size);
-    return 0;
+    memset(address, '\0', INET_ADDRSTRLEN);
+    inet_ntop(AF_INET, &((struct sockaddr_in*)&client->remote.s4)->sin_addr, address, INET_ADDRSTRLEN);
+    *port = ntohs(client->remote.s4.sin_port);
 }
 
 void client_free(DtlsClient* client)

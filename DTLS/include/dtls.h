@@ -23,7 +23,9 @@ typedef union sockAddress_t {
 } SockAddress;
 
 void err(const char* msg);
-int check_ssl_read(SSL* ssl, char* buffer, int len);
+int check_ssl(SSL* ssl, char* buffer, int len);
+int dtls_recv(SSL* ssl, char* buffer, int size);
+int dtls_send(SSL* ssl, char* buffer, int size);
 
 int new_socket(const struct sockaddr* bindingAddress);
 

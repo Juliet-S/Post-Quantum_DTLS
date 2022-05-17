@@ -19,7 +19,7 @@ void err(const char* msg)
     exit(EXIT_FAILURE);
 }
 
-int check_ssl_read(SSL* ssl, char* buffer, int len)
+int check_ssl(SSL* ssl, char* buffer, int len)
 {
     int ret = -1;
 
@@ -52,6 +52,34 @@ int check_ssl_read(SSL* ssl, char* buffer, int len)
     }
 
     return ret;
+}
+
+/**
+ * Receive message from DTLS connection
+ *
+ * @param ssl
+ * @param buffer
+ * @param size
+ * @return
+ */
+int dtls_recv(SSL* ssl, char* buffer, int size)
+{
+    int length = SSL_read(ssl, buffer, size);
+    return check_ssl(ssl, buffer, length);
+}
+
+/**
+ * Send message to DTLS connection
+ *
+ * @param ssl
+ * @param buffer
+ * @param size
+ * @return
+ */
+int dtls_send(SSL* ssl, char* buffer, int size)
+{
+    int length = SSL_write(ssl, buffer, size);
+    return check_ssl(ssl, buffer, length);
 }
 
 /**
