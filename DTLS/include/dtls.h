@@ -11,6 +11,7 @@
  #include <netinet/in.h>
 #endif
 
+#define CONNECTION_MTU_SIZE 1500
 #define MAX_PACKET_SIZE 1500
 
 #include <openssl/ssl.h>

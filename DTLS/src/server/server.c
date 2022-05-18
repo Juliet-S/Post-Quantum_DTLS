@@ -7,6 +7,7 @@
 #else
  #include <unistd.h>
  #include <arpa/inet.h>
+ #include <string.h>
 #endif
 
 #include "server/server.h"
@@ -72,6 +73,7 @@ void server_init(DtlsServer* server, const char* cipher, const char* certChain, 
     SSL_library_init(); /* initialize library */
 
     SSL_CTX* ctx = SSL_CTX_new(DTLS_server_method());
+    SSL_CTX_set_options(ctx, SSL_OP_NO_QUERY_MTU);
     SSL_CTX_set_cipher_list(ctx, cipher);
     SSL_CTX_set_max_proto_version(ctx, DTLS1_2_VERSION);
     SSL_CTX_set_min_proto_version(ctx, DTLS1_2_VERSION);
@@ -201,6 +203,7 @@ int server_dtls_accept(DtlsServer* server)
     connection->ssl = SSL_new(server->ctx);
     SSL_set_bio(connection->ssl, clientBio, clientBio);
     SSL_set_options(connection->ssl, SSL_OP_COOKIE_EXCHANGE);
+    DTLS_set_link_mtu(connection->ssl, CONNECTION_MTU_SIZE);
 
     SockAddress clientAddr = {0};
     if (DTLSv1_listen(connection->ssl, (BIO_ADDR*)&clientAddr) <= 0) {

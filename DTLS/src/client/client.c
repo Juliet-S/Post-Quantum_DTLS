@@ -7,6 +7,7 @@
  #include <unistd.h>
  #include <sys/socket.h>
  #include <arpa/inet.h>
+ #include <string.h>
 #endif
 
 #include <openssl/err.h>
@@ -21,6 +22,7 @@ void client_init(DtlsClient* client, const char* certChain, const char* clientCe
     SSL_library_init(); /* initialize library */
 
     SSL_CTX* ctx = SSL_CTX_new(DTLS_client_method());
+    SSL_CTX_set_options(ctx, SSL_OP_NO_QUERY_MTU);
     SSL_CTX_set_max_proto_version(ctx, DTLS1_2_VERSION);
     SSL_CTX_set_min_proto_version(ctx, DTLS1_2_VERSION);
     SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_OFF);
@@ -81,6 +83,8 @@ int client_connection_setup(DtlsClient* client, const char* address, int port)
     int fd = new_socket((const struct sockaddr*)&local);
 
     SSL* ssl = SSL_new(client->ctx);
+    DTLS_set_link_mtu(ssl, CONNECTION_MTU_SIZE);
+
     BIO* bio = BIO_new_dgram(fd, BIO_CLOSE);
     if (connect(fd, (struct sockaddr*)&remote, sizeof(struct sockaddr_in))) {
         err("Connect error");
