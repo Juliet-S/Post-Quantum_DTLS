@@ -155,7 +155,12 @@ void client_connection_loop(DtlsClient* client)
             break;
         }
 
-        printf("%s:%d> %s\n", address, port, recvBuffer);
+        //printf("%s:%d> %s\n", address, port, recvBuffer);
+#if WIN32
+        Sleep(1000);
+#else
+        sleep(1);
+#endif
     }
 }
 
