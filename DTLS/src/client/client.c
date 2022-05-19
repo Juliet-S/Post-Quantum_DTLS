@@ -138,7 +138,7 @@ void client_connection_loop(DtlsClient* client)
         FD_ZERO(&readset);
         FD_SET(client->socket, &readset);
 
-        if (dtls_send(client->ssl, sendBuffer, strnlen_s(sendBuffer, MAX_PACKET_SIZE)) != 1) {
+        if (dtls_send(client->ssl, sendBuffer, strnlen(sendBuffer, MAX_PACKET_SIZE)) != 1) {
             break;
         }
 

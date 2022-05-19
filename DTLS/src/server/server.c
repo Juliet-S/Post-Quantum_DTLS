@@ -173,7 +173,7 @@ void server_connection_loop(DtlsServer* server)
             }
 
             //printf("%s:%d> %s\n", address, port, packetBuffer);
-            dtls_send(connection->ssl, packetBuffer, strnlen_s(packetBuffer, MAX_PACKET_SIZE));
+            dtls_send(connection->ssl, packetBuffer, strnlen(packetBuffer, MAX_PACKET_SIZE));
         }
         else {
             server_dtls_accept(server);
