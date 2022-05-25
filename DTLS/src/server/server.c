@@ -85,7 +85,7 @@ void server_init(DtlsServer* server, const char* cipher, const char* certChain, 
     SSL_CTX_set_client_CA_list(ctx, SSL_load_client_CA_file(certChain));
 
     if (!SSL_CTX_use_certificate_file(ctx, certFile, SSL_FILETYPE_PEM)) {
-        err("No certificate chain found");
+        err("No certificate found");
     }
 
     if (!SSL_CTX_use_PrivateKey_file(ctx, privKey, SSL_FILETYPE_PEM)) {
@@ -172,7 +172,7 @@ void server_connection_loop(DtlsServer* server)
                 continue;
             }
 
-            //printf("%s:%d> %s\n", address, port, packetBuffer);
+            printf("%s:%d> %.8s ... (%zu)\n", address, port, packetBuffer, strnlen(packetBuffer, MAX_PACKET_SIZE));
             dtls_send(connection->ssl, packetBuffer, strnlen(packetBuffer, MAX_PACKET_SIZE));
         }
         else {

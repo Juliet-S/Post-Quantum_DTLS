@@ -117,6 +117,31 @@ int client_connection_setup(DtlsClient* client, const char* address, int port)
     return ret;
 }
 
+/**
+ * Generate a random string of specified length
+ * @param str Char buffer
+ * @param size Size of string to generate
+ * @return String
+ */
+static char* rand_string(char* str, size_t size)
+{
+    const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJK1234567890!@#$%^&*()_+-=,./\\|";
+    int length = sizeof(charset) - 1;
+
+    size--;
+    for (size_t n = 0; n < size; n++) {
+        int key = rand() % length;
+        str[n] = charset[key];
+    }
+
+    str[size] = '\0';
+    return str;
+}
+
+/**
+ * Client connection loop
+ * @param client DTLS Client connection
+ */
 void client_connection_loop(DtlsClient* client)
 {
     char address[INET_ADDRSTRLEN] = {0};
@@ -138,6 +163,7 @@ void client_connection_loop(DtlsClient* client)
         FD_ZERO(&readset);
         FD_SET(client->socket, &readset);
 
+        rand_string(sendBuffer, MAX_PACKET_SIZE - 128);
         if (dtls_send(client->ssl, sendBuffer, strnlen(sendBuffer, MAX_PACKET_SIZE)) != 1) {
             break;
         }
@@ -155,7 +181,7 @@ void client_connection_loop(DtlsClient* client)
             break;
         }
 
-        //printf("%s:%d> %s\n", address, port, recvBuffer);
+        printf("%s:%d> %.8s ... (%zu)\n", address, port, recvBuffer, strnlen(recvBuffer, MAX_PACKET_SIZE));
 #if WIN32
         Sleep(1000);
 #else
@@ -164,6 +190,13 @@ void client_connection_loop(DtlsClient* client)
     }
 }
 
+/**
+ * Get client connection information
+ *
+ * @param client DTLS Client
+ * @param address Address buffer (At least INET_ADDRESTRLEN in size)
+ * @param port Store port of client
+ */
 void client_get_connection_info(DtlsClient* client, char* address, int* port)
 {
     memset(address, '\0', INET_ADDRSTRLEN);
@@ -171,6 +204,11 @@ void client_get_connection_info(DtlsClient* client, char* address, int* port)
     *port = ntohs(client->remote.s4.sin_port);
 }
 
+/**
+ * Free client resources
+ *
+ * @param client DTLS Client
+ */
 void client_free(DtlsClient* client)
 {
 #if WIN32
