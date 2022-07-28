@@ -6,8 +6,6 @@
  #include <unistd.h>
 #endif
 
-#include <openssl/err.h>
-
 /**
  * Print error message and exit program
  *
@@ -19,35 +17,29 @@ void err(const char* msg)
     exit(EXIT_FAILURE);
 }
 
-int check_ssl(SSL* ssl, char* buffer, int len)
+int check_ssl(WOLFSSL* ssl, char* buffer, int code)
 {
     int ret = -1;
-
-    switch (SSL_get_error(ssl, len))
+    int errCode = wolfSSL_get_error(ssl, 0);
+    switch (wolfSSL_get_error(ssl, ret))
     {
-        case SSL_ERROR_NONE:
-        case SSL_ERROR_ZERO_RETURN:
+        case WOLFSSL_ERROR_NONE:
+        case WOLFSSL_ERROR_ZERO_RETURN:
             /* Reading data is ok */
             ret = 1;
             break;
 
-        case SSL_ERROR_WANT_READ:
-            /* Stop reading on socket timeout, otherwise try again */
-            if (BIO_ctrl(SSL_get_rbio(ssl), BIO_CTRL_DGRAM_GET_RECV_TIMER_EXP,0, NULL)) {
-                fprintf(stderr, "No response received!\n");
-            }
+        case WOLFSSL_ERROR_WANT_READ:
+            fprintf(stderr, "Want read!\n");
+            ret = 1;
             break;
 
-        case SSL_ERROR_SYSCALL:
+        case WOLFSSL_ERROR_SYSCALL:
             fprintf(stderr, "Socket read error!\n");
             break;
 
-        case SSL_ERROR_SSL:
-            fprintf(stderr, "%s (%d)\n", ERR_error_string(ERR_get_error(), buffer), SSL_get_error(ssl, len));
-            break;
-
         default:
-            fprintf(stderr, "Unexpected error while reading!\n");
+            fprintf(stderr, "err = %d, %s\n", errCode, wolfSSL_ERR_reason_error_string(errCode));
             break;
     }
 
@@ -62,10 +54,13 @@ int check_ssl(SSL* ssl, char* buffer, int len)
  * @param size
  * @return
  */
-int dtls_recv(SSL* ssl, char* buffer, int size)
+int dtls_recv(WOLFSSL* ssl, char* buffer, int size)
 {
-    int length = SSL_read(ssl, buffer, size);
-    return check_ssl(ssl, buffer, length);
+    int ret = wolfSSL_read(ssl, buffer, size);
+    if (ret == 0) {
+        return check_ssl(ssl, buffer, ret);
+    }
+    return 1;
 }
 
 /**
@@ -76,10 +71,13 @@ int dtls_recv(SSL* ssl, char* buffer, int size)
  * @param size
  * @return
  */
-int dtls_send(SSL* ssl, char* buffer, int size)
+int dtls_send(WOLFSSL* ssl, char* buffer, int size)
 {
-    int length = SSL_write(ssl, buffer, size);
-    return check_ssl(ssl, buffer, length);
+    int ret = wolfSSL_write(ssl, buffer, size);
+    if (ret == 0) {
+        return check_ssl(ssl, buffer, ret);
+    }
+    return 1;
 }
 
 /**

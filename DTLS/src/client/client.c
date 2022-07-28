@@ -1,5 +1,5 @@
-#include <openssl/ssl.h>
 #include <memory.h>
+#include <stdio.h>
 
 #if WIN32
  #include <WS2tcpip.h>
@@ -10,48 +10,31 @@
  #include <string.h>
 #endif
 
-#include <openssl/err.h>
-
 #include "client/client.h"
-#include "dtls.h"
 #include "info.h"
 
 void client_init(DtlsClient* client, const char* certChain, const char* clientCert, const char* clientKey, int mode)
 {
-    SSL_load_error_strings(); /* readable error messages */
-    SSL_library_init(); /* initialize library */
+    if (wolfSSL_Init() != SSL_SUCCESS) {
+        err("WolfSSL init error");
+    }
 
-    SSL_CTX* ctx = SSL_CTX_new(DTLS_client_method());
-    SSL_CTX_set_options(ctx, SSL_OP_NO_QUERY_MTU);
-    SSL_CTX_set_max_proto_version(ctx, DTLS1_2_VERSION);
-    SSL_CTX_set_min_proto_version(ctx, DTLS1_2_VERSION);
-    SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_OFF);
+    wolfSSL_Debugging_ON();
 
-    int usingCert = clientCert && clientKey;
-    if (clientCert && !SSL_CTX_use_certificate_file(ctx, clientCert, SSL_FILETYPE_PEM)) {
+    WOLFSSL_CTX* ctx = wolfSSL_CTX_new(wolfDTLSv1_3_client_method());
+
+    if (!certChain || wolfSSL_CTX_load_verify_locations(ctx, certChain, 0) != SSL_SUCCESS) {
+        err("Root CA certificate invalid");
+    }
+
+    if (clientCert && wolfSSL_CTX_use_certificate_file(ctx, clientCert, SSL_FILETYPE_PEM) != SSL_SUCCESS) {
         printf("Client certificate not found\n");
-        usingCert = 0;
     }
 
-    if (clientKey && !SSL_CTX_use_PrivateKey_file(ctx, clientKey, SSL_FILETYPE_PEM)) {
+    if (clientKey && wolfSSL_CTX_use_PrivateKey_file(ctx, clientKey, SSL_FILETYPE_PEM) != SSL_SUCCESS) {
         printf("Client private key not found\n");
-        usingCert = 0;
     }
 
-    if (usingCert && !SSL_CTX_check_private_key (ctx)) {
-        err("Invalid private key");
-    }
-
-    if (usingCert && (!certChain || !SSL_CTX_load_verify_locations(ctx, certChain, NULL) || !SSL_CTX_set_default_verify_paths(ctx))) {
-        err("No or invalid certificate chain");
-    }
-
-    if (usingCert && certChain) {
-        SSL_CTX_set_client_CA_list(ctx, SSL_load_client_CA_file(certChain));
-    }
-
-    SSL_CTX_set_read_ahead(ctx, 1);
-    SSL_CTX_set_verify(ctx, mode, NULL);
     client->ctx = ctx;
 }
 
@@ -64,7 +47,7 @@ void client_init(DtlsClient* client, const char* certChain, const char* clientCe
  */
 int client_connection_setup(DtlsClient* client, const char* address, int port)
 {
-    int ret;
+    int ret = 0;
     SockAddress local = {
         .s4.sin_family = AF_INET,
         .s4.sin_addr.s_addr = htonl(INADDR_ANY),
@@ -82,37 +65,29 @@ int client_connection_setup(DtlsClient* client, const char* address, int port)
 
     int fd = new_socket((const struct sockaddr*)&local);
 
-    SSL* ssl = SSL_new(client->ctx);
-    DTLS_set_link_mtu(ssl, CONNECTION_MTU_SIZE);
+    WOLFSSL* ssl = wolfSSL_new(client->ctx);
 
-    BIO* bio = BIO_new_dgram(fd, BIO_CLOSE);
-    if (connect(fd, (struct sockaddr*)&remote, sizeof(struct sockaddr_in))) {
-        err("Connect error");
-    }
-    BIO_ctrl(bio, BIO_CTRL_DGRAM_SET_CONNECTED, 0, &remote.ss);
-    SSL_set_bio(ssl, bio, bio);
-
-    ret = SSL_connect(ssl);
-    if (ret <= 0) {
-        char buffer[256];
-        ERR_error_string_n(ERR_get_error(), buffer, 256);
-        fprintf(stderr, "%s\n", buffer);
-        err("SSL Connection failed");
+    if (wolfSSL_dtls_set_peer(ssl, &(remote.s4), sizeof(remote.s4)) != WOLFSSL_SUCCESS) {
+        err("Set peer failed");
     }
 
-    /* Set and activate timeouts */
-    struct timeval timeout = {
-        .tv_sec = 3,
-        .tv_usec = 0
-    };
-    BIO_ctrl(bio, BIO_CTRL_DGRAM_SET_RECV_TIMEOUT, 0, &timeout);
+    if (wolfSSL_set_fd(ssl, fd) != WOLFSSL_SUCCESS) {
+        err("Cannot set socket file descriptor");
+    }
+
+    if (wolfSSL_connect(ssl) != SSL_SUCCESS) {
+        int errCode = wolfSSL_get_error(ssl, 0);
+        fprintf(stderr, "err = %d, %s\n", errCode, wolfSSL_ERR_reason_error_string(errCode));
+        ret = -1;
+        err("wolfSSL connect failed");
+    }
 
     client->ssl = ssl;
-    client->bio = bio;
     client->socket = fd;
     client->remote = remote;
 
     info_print_server_summary(client);
+    info_print_ssl_summary(ssl);
 
     return ret;
 }
@@ -153,9 +128,9 @@ void client_connection_loop(DtlsClient* client)
     fd_set readset;
     struct timeval timeout;
 
-    char sendBuffer[MAX_PACKET_SIZE] = "Hello World\0";
-    char recvBuffer[MAX_PACKET_SIZE] = {0};
-    while (!(SSL_get_shutdown(client->ssl) & SSL_RECEIVED_SHUTDOWN))
+    char sendBuffer[MAX_PACKET_SIZE];
+    char recvBuffer[MAX_PACKET_SIZE];
+    while (wolfSSL_get_shutdown(client->ssl) != SSL_RECEIVED_SHUTDOWN)
     {
         timeout.tv_sec = 1;
         timeout.tv_usec = 0;
@@ -163,7 +138,7 @@ void client_connection_loop(DtlsClient* client)
         FD_ZERO(&readset);
         FD_SET(client->socket, &readset);
 
-        rand_string(sendBuffer, MAX_PACKET_SIZE - 128);
+        rand_string(sendBuffer, MAX_PACKET_SIZE);
         if (dtls_send(client->ssl, sendBuffer, strnlen(sendBuffer, MAX_PACKET_SIZE)) != 1) {
             break;
         }
@@ -217,6 +192,6 @@ void client_free(DtlsClient* client)
     close(client->socket);
 #endif
     client->socket = -1;
-    SSL_CTX_free(client->ctx);
+    wolfSSL_CTX_free(client->ctx);
     client->ctx = NULL;
 }

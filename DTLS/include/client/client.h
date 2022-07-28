@@ -1,14 +1,16 @@
 #ifndef PQDTLS_CLIENT_H
 #define PQDTLS_CLIENT_H
 
-#include <openssl/ssl.h>
+#define WOLFSSL_USER_SETTINGS
+
+#include <wolfssl/wolfcrypt/settings.h>
+#include <wolfssl/ssl.h>
 
 #include "dtls.h"
 
 typedef struct dtlsClient_h {
-    SSL_CTX* ctx;
-    SSL* ssl;
-    BIO* bio;
+    WOLFSSL_CTX* ctx;
+    WOLFSSL* ssl;
     SockAddress remote;
     int socket;
 } DtlsClient;

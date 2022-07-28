@@ -12,9 +12,11 @@
 #endif
 
 #define CONNECTION_MTU_SIZE 1500
-#define MAX_PACKET_SIZE 1500
+#define MAX_PACKET_SIZE 1200
 
-#include <openssl/ssl.h>
+#include <wolfssl/wolfcrypt/settings.h>
+#include <wolfssl/ssl.h>
+
 #include "hashtable.h"
 
 typedef union sockAddress_t {
@@ -24,9 +26,9 @@ typedef union sockAddress_t {
 } SockAddress;
 
 void err(const char* msg);
-int check_ssl(SSL* ssl, char* buffer, int len);
-int dtls_recv(SSL* ssl, char* buffer, int size);
-int dtls_send(SSL* ssl, char* buffer, int size);
+int check_ssl(WOLFSSL* ssl, char* buffer, int code);
+int dtls_recv(WOLFSSL* ssl, char* buffer, int size);
+int dtls_send(WOLFSSL* ssl, char* buffer, int size);
 
 int new_socket(const struct sockaddr* bindingAddress);
 

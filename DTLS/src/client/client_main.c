@@ -91,7 +91,7 @@ int main(int argc, char** argv)
     double startTime = (double)clock() / CLOCKS_PER_SEC;
     client_connection_setup(&client, address, port);
     double endTime = (double)clock() / CLOCKS_PER_SEC;
-    printf("%lf\n", endTime - startTime);
+    printf("  Time to connect: %lf\n", endTime - startTime);
 
     client_connection_loop(&client);
     client_free(&client);
