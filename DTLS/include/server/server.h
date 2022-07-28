@@ -10,11 +10,16 @@
  #include <netinet/in.h>
 #endif
 
+#define WOLFSSL_USER_SETTINGS
+
+#include <wolfssl/wolfcrypt/settings.h>
+#include <wolfssl/ssl.h>
+
 #include "dtls.h"
 
 typedef struct dtlsServer_t {
     int isRunning;
-    SSL_CTX* ctx;
+    WOLFSSL_CTX* ctx;
     SockAddress local;
     int socket;
     int timeoutSeconds;
@@ -22,19 +27,18 @@ typedef struct dtlsServer_t {
 } DtlsServer;
 
 typedef struct dtlsConnection_t {
-    SSL* ssl;
+    WOLFSSL* ssl;
     int port;
     char address[INET_ADDRSTRLEN];
 } DtlsConnection;
 
-void server_init(DtlsServer* server, const char* cipher, const char* certChain, const char* certFile, const char* privKey, int mode);
+void server_init(DtlsServer* server, const char* ciphers, const char* certChain, const char* certFile, const char* privKey, int mode);
 void server_connection_setup(DtlsServer* server, int port, unsigned int connectionTableSize, void* free_func(void *));
 
 void server_connection_loop(DtlsServer* server);
 
-int server_dtls_accept(DtlsServer* server);
+int server_dtls_accept(DtlsServer* server, struct sockaddr* clientSockAddr);
 
-int server_recv(DtlsConnection* connection, void* buffer, int size);
 void server_free(DtlsServer* server);
 void server_connection_free(DtlsConnection* connection);
 

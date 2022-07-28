@@ -1,6 +1,3 @@
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-
 #if WIN32
  #include <winsock2.h>
  #include <WS2tcpip.h>
@@ -11,7 +8,6 @@
 #endif
 
 #include "server/server.h"
-#include "server/sverify.h"
 #include "info.h"
 
 /**
@@ -67,35 +63,35 @@ DtlsConnection* get_connection(DtlsServer* server, const char* address, int port
  *
  * @param server Uninitialized server struct
  */
-void server_init(DtlsServer* server, const char* cipher, const char* certChain, const char* certFile, const char* privKey, int mode)
+void server_init(DtlsServer* server, const char* ciphers, const char* certChain, const char* certFile, const char* privKey, int mode)
 {
-    SSL_load_error_strings(); /* readable error messages */
-    SSL_library_init(); /* initialize library */
+    if (wolfSSL_Init() != SSL_SUCCESS) {
+        err("WolfSSL init error");
+    }
 
-    SSL_CTX* ctx = SSL_CTX_new(DTLS_server_method());
-    SSL_CTX_set_options(ctx, SSL_OP_NO_QUERY_MTU);
-    SSL_CTX_set_cipher_list(ctx, cipher);
-    SSL_CTX_set_max_proto_version(ctx, DTLS1_2_VERSION);
-    SSL_CTX_set_min_proto_version(ctx, DTLS1_2_VERSION);
-    SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_OFF);
+    wolfSSL_Debugging_ON();
 
-    if (!certChain || !SSL_CTX_load_verify_locations(ctx, certChain, NULL) || !SSL_CTX_set_default_verify_paths(ctx)) {
+    WOLFSSL_CTX* ctx = wolfSSL_CTX_new(wolfDTLSv1_3_server_method());
+
+    if (!certChain || wolfSSL_CTX_load_verify_locations(ctx, certChain, 0) != SSL_SUCCESS) {
         err("No or invalid certificate chain");
     }
-    SSL_CTX_set_client_CA_list(ctx, SSL_load_client_CA_file(certChain));
 
-    if (!SSL_CTX_use_certificate_file(ctx, certFile, SSL_FILETYPE_PEM)) {
+    if (wolfSSL_CTX_use_certificate_file(ctx, certFile, SSL_FILETYPE_PEM) != SSL_SUCCESS) {
         err("No certificate found");
     }
 
-    if (!SSL_CTX_use_PrivateKey_file(ctx, privKey, SSL_FILETYPE_PEM)) {
+    if (wolfSSL_CTX_use_PrivateKey_file(ctx, privKey, SSL_FILETYPE_PEM) != SSL_SUCCESS) {
         err("No or invalid private key");
     }
 
-    SSL_CTX_set_read_ahead(ctx, 1);
-    SSL_CTX_set_verify(ctx, mode, NULL);
-    SSL_CTX_set_cookie_generate_cb(ctx, sverify_generate_cookie);
-    SSL_CTX_set_cookie_verify_cb(ctx, &sverify_cookie);
+    if (!ciphers || wolfSSL_CTX_set_cipher_list(ctx, ciphers) != SSL_SUCCESS) {
+        err("Missing or invalid ciphersuite list");
+    }
+
+    if (mode) {
+        wolfSSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, 0);
+    }
 
     server->ctx = ctx;
 }
@@ -165,18 +161,18 @@ void server_connection_loop(DtlsServer* server)
         {
             memset(packetBuffer, 0, MAX_PACKET_SIZE);
             int recvlen = dtls_recv(connection->ssl, packetBuffer, MAX_PACKET_SIZE);
-            if (SSL_get_shutdown(connection->ssl) || recvlen <= 0)
+            if (wolfSSL_get_shutdown(connection->ssl) == SSL_RECEIVED_SHUTDOWN || recvlen <= 0)
             {
                 fprintf(stdout, "%s:%d> Disconnected (recvlen = %d)\n", address, port, recvlen);
                 hashtable_remove(server->connections, hash_connection(address, port), connection);
                 continue;
             }
 
-            printf("%s:%d> %.8s ... (%zu)\n", address, port, packetBuffer, strnlen(packetBuffer, MAX_PACKET_SIZE));
+            //printf("%s:%d> %.8s ... (%zu)\n", address, port, packetBuffer, strnlen(packetBuffer, MAX_PACKET_SIZE));
             dtls_send(connection->ssl, packetBuffer, strnlen(packetBuffer, MAX_PACKET_SIZE));
         }
         else {
-            server_dtls_accept(server);
+            server_dtls_accept(server, &clientSocket);
         }
     }
 }
@@ -188,47 +184,38 @@ void server_connection_loop(DtlsServer* server)
  * @param client Client struct to initialize on connected
  * @return 1 on accepted, <= 0 otherwise
  */
-int server_dtls_accept(DtlsServer* server)
+int server_dtls_accept(DtlsServer* server, struct sockaddr* clientSockAddr)
 {
     DtlsConnection* connection = calloc(1, sizeof(DtlsConnection));
 
-    BIO* clientBio = BIO_new_dgram(server->socket, BIO_NOCLOSE);
-
-    struct timeval timeout = {
-        .tv_sec = 1,
-        .tv_usec = 0
-    };
-    BIO_ctrl(clientBio, BIO_CTRL_DGRAM_SET_RECV_TIMEOUT, 0, &timeout);
-
-    connection->ssl = SSL_new(server->ctx);
-    SSL_set_bio(connection->ssl, clientBio, clientBio);
-    SSL_set_options(connection->ssl, SSL_OP_COOKIE_EXCHANGE);
-    DTLS_set_link_mtu(connection->ssl, CONNECTION_MTU_SIZE);
-
-    SockAddress clientAddr = {0};
-    if (DTLSv1_listen(connection->ssl, (BIO_ADDR*)&clientAddr) <= 0) {
-        server_connection_free(connection);
-        return -1;
-    } // Wait for ClientHello + Reply + Cookie
-
-    /* Finish handshake */
-    int ret;
-    do
-    {
-        ret = SSL_accept(connection->ssl);
-    } while (ret == 0);
-
-    if (ret < 0)
-    {
-        char buffer[256];
-        ERR_error_string_n(ERR_get_error(), buffer, 256);
-        fprintf(stderr, "%s\n", buffer);
+    connection->ssl = wolfSSL_new(server->ctx);
+    if (!connection->ssl) {
+        fprintf(stderr, "Failed to allocate new client\n");
         server_connection_free(connection);
         return -1;
     }
 
-    inet_ntop(AF_INET, &((struct sockaddr_in*)&clientAddr)->sin_addr, connection->address, INET_ADDRSTRLEN);
-    connection->port = ntohs(((struct sockaddr_in*)&clientAddr)->sin_port);
+    if (wolfSSL_dtls_set_peer(connection->ssl, clientSockAddr, sizeof(*clientSockAddr)) != SSL_SUCCESS) {
+        fprintf(stderr, "Failed to set client peer\n");
+        server_connection_free(connection);
+        return -1;
+    }
+
+    if (wolfSSL_set_fd(connection->ssl, server->socket) != SSL_SUCCESS) {
+        fprintf(stderr, "Failed to bind new connection to socket\n");
+        server_connection_free(connection);
+        return -1;
+    }
+
+    if (wolfSSL_accept(connection->ssl) != SSL_SUCCESS) {
+        int errCode = wolfSSL_get_error(connection->ssl, 0);
+        fprintf(stderr, "Connection failed, error = %d, %s\n", errCode, wolfSSL_ERR_reason_error_string(errCode));
+        server_connection_free(connection);
+        return -1;
+    }
+
+    inet_ntop(AF_INET, &((struct sockaddr_in*)clientSockAddr)->sin_addr, connection->address, INET_ADDRSTRLEN);
+    connection->port = ntohs(((struct sockaddr_in*)clientSockAddr)->sin_port);
 
     printf("New connection from %s:%d with hash of (%zu)\n", connection->address, connection->port, hash_connection(connection->address, connection->port) % server->connections->size);
     info_print_ssl_summary(connection->ssl);
@@ -249,13 +236,13 @@ void server_free(DtlsServer* server)
 #endif
     server->socket = -1;
     hashtable_free(server->connections);
-    SSL_CTX_free(server->ctx);
+    wolfSSL_CTX_free(server->ctx);
     server->ctx = NULL;
 }
 
 void server_connection_free(DtlsConnection* connection)
 {
-    SSL_shutdown(connection->ssl);
-    SSL_free(connection->ssl);
+    wolfSSL_shutdown(connection->ssl);
+    wolfSSL_free(connection->ssl);
     connection->ssl = NULL;
 }
