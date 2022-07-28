@@ -1,3 +1,6 @@
 [submodule "openssl"]
 	path = openssl
 	url = git@github.com:openssl/openssl.git
+[submodule "wolfssl"]
+	path = wolfssl
+	url = git@github.com:wolfSSL/wolfssl.git
