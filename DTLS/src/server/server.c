@@ -8,7 +8,8 @@
 #endif
 
 #include "server/server.h"
-#include "info.h"
+#include "common/info.h"
+#include "common/debug.h"
 
 /**
  * Get client info from a socket
@@ -128,7 +129,7 @@ void server_connection_loop(DtlsServer* server)
 {
     // Incoming connection handling
     struct sockaddr clientSocket = {0};
-    char packetBuffer[1500];
+    char packetBuffer[MAX_PACKET_SIZE];
     char address[INET_ADDRSTRLEN];
     int port;
 
@@ -159,7 +160,6 @@ void server_connection_loop(DtlsServer* server)
 
         if (connection != NULL)
         {
-            memset(packetBuffer, 0, MAX_PACKET_SIZE);
             int recvlen = dtls_recv(connection->ssl, packetBuffer, MAX_PACKET_SIZE);
             if (wolfSSL_get_shutdown(connection->ssl) == SSL_RECEIVED_SHUTDOWN || recvlen <= 0)
             {
@@ -168,7 +168,7 @@ void server_connection_loop(DtlsServer* server)
                 continue;
             }
 
-            //printf("%s:%d> %.8s ... (%zu)\n", address, port, packetBuffer, strnlen(packetBuffer, MAX_PACKET_SIZE));
+            printf("%s:%d> %.8s ... (%zu)\n", address, port, packetBuffer, strnlen(packetBuffer, MAX_PACKET_SIZE));
             dtls_send(connection->ssl, packetBuffer, strnlen(packetBuffer, MAX_PACKET_SIZE));
         }
         else {
@@ -190,26 +190,26 @@ int server_dtls_accept(DtlsServer* server, struct sockaddr* clientSockAddr)
 
     connection->ssl = wolfSSL_new(server->ctx);
     if (!connection->ssl) {
-        fprintf(stderr, "Failed to allocate new client\n");
+        dprint("Failed to allocate new client\n");
         server_connection_free(connection);
         return -1;
     }
 
     if (wolfSSL_dtls_set_peer(connection->ssl, clientSockAddr, sizeof(*clientSockAddr)) != SSL_SUCCESS) {
-        fprintf(stderr, "Failed to set client peer\n");
+        dprint("Failed to set client peer\n");
         server_connection_free(connection);
         return -1;
     }
 
     if (wolfSSL_set_fd(connection->ssl, server->socket) != SSL_SUCCESS) {
-        fprintf(stderr, "Failed to bind new connection to socket\n");
+        dprint("Failed to bind new connection to socket\n");
         server_connection_free(connection);
         return -1;
     }
 
-    if (wolfSSL_accept(connection->ssl) != SSL_SUCCESS) {
+    if (!wolfSSL_dtls(connection->ssl) || wolfSSL_accept(connection->ssl) != SSL_SUCCESS) {
         int errCode = wolfSSL_get_error(connection->ssl, 0);
-        fprintf(stderr, "Connection failed, error = %d, %s\n", errCode, wolfSSL_ERR_reason_error_string(errCode));
+        dprint("Connection failed, error = %d, %s", errCode, wolfSSL_ERR_reason_error_string(errCode));
         server_connection_free(connection);
         return -1;
     }
@@ -242,7 +242,10 @@ void server_free(DtlsServer* server)
 
 void server_connection_free(DtlsConnection* connection)
 {
-    wolfSSL_shutdown(connection->ssl);
+    if (wolfSSL_shutdown(connection->ssl) != SSL_SUCCESS) {
+        wolfSSL_shutdown(connection->ssl);
+    }
     wolfSSL_free(connection->ssl);
     connection->ssl = NULL;
+    free(connection);
 }

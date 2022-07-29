@@ -11,7 +11,7 @@
 #endif
 
 #include "client/client.h"
-#include "info.h"
+#include "common/info.h"
 
 void client_init(DtlsClient* client, const char* certChain, const char* clientCert, const char* clientKey, int mode)
 {
@@ -67,11 +67,11 @@ int client_connection_setup(DtlsClient* client, const char* address, int port)
 
     WOLFSSL* ssl = wolfSSL_new(client->ctx);
 
-    if (wolfSSL_dtls_set_peer(ssl, &(remote.s4), sizeof(remote.s4)) != WOLFSSL_SUCCESS) {
+    if (wolfSSL_dtls_set_peer(ssl, &(remote.s4), sizeof(remote.s4)) != SSL_SUCCESS) {
         err("Set peer failed");
     }
 
-    if (wolfSSL_set_fd(ssl, fd) != WOLFSSL_SUCCESS) {
+    if (wolfSSL_set_fd(ssl, fd) != SSL_SUCCESS) {
         err("Cannot set socket file descriptor");
     }
 
@@ -186,12 +186,17 @@ void client_get_connection_info(DtlsClient* client, char* address, int* port)
  */
 void client_free(DtlsClient* client)
 {
+    wolfSSL_shutdown(client->ssl);
+    wolfSSL_free(client->ssl);
+
 #if WIN32
     closesocket(client->socket);
 #else
     close(client->socket);
 #endif
-    client->socket = -1;
+    client->socket = 0;
+
     wolfSSL_CTX_free(client->ctx);
     client->ctx = NULL;
+    wolfSSL_Cleanup();
 }
