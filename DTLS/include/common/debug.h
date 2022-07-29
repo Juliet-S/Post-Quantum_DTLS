@@ -11,4 +11,8 @@
         do { if (DEBUG_TEST) fprintf(stderr, "%s:%d:%s(): " fmt "\n", __FILE__, \
                                 __LINE__, __func__, ##__VA_ARGS__); } while (0)
 
+#define fdprint(file, fmt, ...) \
+        do { if (DEBUG_TEST) fprintf(file, "%s:%d:%s(): " fmt "\n", __FILE__, \
+                                __LINE__, __func__, ##__VA_ARGS__); } while (0)
+
 #endif // PQDTLS_DEBUG_H

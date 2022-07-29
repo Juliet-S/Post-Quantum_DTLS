@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "server/server.h"
+#include "common/debug.h"
 
 DtlsServer server = {0};
 
@@ -53,6 +54,8 @@ void parse_opt(int argc, char** argv, char** cipher, char** certChain, char** ce
 
 int main(int argc, char** argv)
 {
+    fdprint(stdout, "Debug build\n");
+
     signal(SIGINT, interrupt_handler);
 
     const unsigned int tablesize = 100;

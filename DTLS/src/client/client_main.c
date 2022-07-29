@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "client/client.h"
+#include "common/debug.h"
 
 void opt_err(char** argv)
 {
@@ -54,6 +55,8 @@ void parse_address(char* address, int* port) {
 
 int main(int argc, char** argv)
 {
+    fdprint(stdout, "Debug build\n");
+
     DtlsClient client = {0};
     char* certChain = NULL;           // certs/bundle.pem
     char* clientCert = NULL;          // certs/client.crt
