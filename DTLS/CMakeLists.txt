@@ -2,6 +2,10 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.16.0)
 set(CMAKE_C_STANDARD 11)
 project(dtls C)
 
+if (DEBUG)
+    add_compile_definitions(DEBUG)
+endif()
+
 if (NOT WOLFSSL_LIBRARIES)
     message(FATAL_ERROR "WOLFSSL_LIBRARIES not specified")
 endif()

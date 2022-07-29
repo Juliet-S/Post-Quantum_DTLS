@@ -1,4 +1,4 @@
-#include "info.h"
+#include "common/info.h"
 
 void info_print_ssl_summary(WOLFSSL* con) {
     WOLFSSL_CIPHER* cipher = wolfSSL_get_current_cipher(con);

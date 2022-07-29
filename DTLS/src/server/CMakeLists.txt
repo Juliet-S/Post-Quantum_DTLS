@@ -1,1 +1,1 @@
-add_executable(${PROJECT_NAME}_server server_main.c server.c sverify.c ../dtls.c ../hashtable.c ../info.c)
+add_executable(${PROJECT_NAME}_server server_main.c server.c ../common/dtls.c ../common/hashtable.c ../common/info.c)

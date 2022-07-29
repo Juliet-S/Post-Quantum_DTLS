@@ -1,7 +1,9 @@
 #ifndef PQDTLS_INFO_H
 #define PQDTLS_INFO_H
 
-#define WOLFSSL_USER_SETTINGS
+#if WIN32
+    #define WOLFSSL_USER_SETTINGS
+#endif
 
 #include <wolfssl/wolfcrypt/settings.h>
 #include <wolfssl/ssl.h>

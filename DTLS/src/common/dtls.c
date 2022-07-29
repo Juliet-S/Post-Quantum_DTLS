@@ -1,4 +1,4 @@
-#include "dtls.h"
+#include "common/dtls.h"
 
 #if WIN32
  #include <WinSock2.h>
@@ -56,6 +56,7 @@ int check_ssl(WOLFSSL* ssl, char* buffer, int code)
  */
 int dtls_recv(WOLFSSL* ssl, char* buffer, int size)
 {
+    memset(buffer, 0, MAX_PACKET_SIZE);
     int ret = wolfSSL_read(ssl, buffer, size);
     if (ret == 0) {
         return check_ssl(ssl, buffer, ret);

@@ -1,12 +1,14 @@
 #ifndef PQDTLS_CLIENT_H
 #define PQDTLS_CLIENT_H
 
+#if WIN32
 #define WOLFSSL_USER_SETTINGS
+#endif
 
 #include <wolfssl/wolfcrypt/settings.h>
 #include <wolfssl/ssl.h>
 
-#include "dtls.h"
+#include "common/dtls.h"
 
 typedef struct dtlsClient_h {
     WOLFSSL_CTX* ctx;

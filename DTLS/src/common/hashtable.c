@@ -1,11 +1,13 @@
 #include <stdlib.h>
 #include <stdio.h>
+
 #if WIN32
 #else
  #include <memory.h>
 #endif
 
-#include "hashtable.h"
+#include "common/hashtable.h"
+#include "common/debug.h"
 
 hashtable* hashtable_new(unsigned int size)
 {
@@ -62,7 +64,7 @@ void hashtable_remove(hashtable* table, size_t hash, void* item)
 {
     node* current = table->data[hash % table->size];
     if (current == NULL) {
-        fprintf(stderr, "Failed to remove item\n");
+        dprint("Failed to remove item\n");
         return;
     }
 

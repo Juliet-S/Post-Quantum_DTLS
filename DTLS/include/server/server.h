@@ -10,12 +10,14 @@
  #include <netinet/in.h>
 #endif
 
-#define WOLFSSL_USER_SETTINGS
+#if WIN32
+    #define WOLFSSL_USER_SETTINGS
+#endif
 
 #include <wolfssl/wolfcrypt/settings.h>
 #include <wolfssl/ssl.h>
 
-#include "dtls.h"
+#include "common/dtls.h"
 
 typedef struct dtlsServer_t {
     int isRunning;

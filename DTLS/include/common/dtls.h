@@ -11,7 +11,6 @@
  #include <netinet/in.h>
 #endif
 
-#define CONNECTION_MTU_SIZE 1500
 #define MAX_PACKET_SIZE 1200
 
 #include <wolfssl/wolfcrypt/settings.h>
