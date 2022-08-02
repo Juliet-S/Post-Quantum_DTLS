@@ -10,13 +10,6 @@
  #include <netinet/in.h>
 #endif
 
-#if WIN32
-    #define WOLFSSL_USER_SETTINGS
-#endif
-
-#include <wolfssl/wolfcrypt/settings.h>
-#include <wolfssl/ssl.h>
-
 #include "common/dtls.h"
 
 typedef struct dtlsServer_t {
@@ -34,7 +27,7 @@ typedef struct dtlsConnection_t {
     char address[INET_ADDRSTRLEN];
 } DtlsConnection;
 
-void server_init(DtlsServer* server, const char* ciphers, const char* certChain, const char* certFile, const char* privKey, int mode);
+void server_init(DtlsServer* server, const char* ciphers, const char* rootChain, const char* serverChain, const char* privKey, int mode);
 void server_connection_setup(DtlsServer* server, int port, unsigned int connectionTableSize, void* free_func(void *));
 
 void server_connection_loop(DtlsServer* server);

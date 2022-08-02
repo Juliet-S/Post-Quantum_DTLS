@@ -13,6 +13,8 @@
 
 #define MAX_PACKET_SIZE 1200
 
+#define WOLFSSL_USER_SETTINGS
+
 #include <wolfssl/wolfcrypt/settings.h>
 #include <wolfssl/ssl.h>
 

@@ -64,7 +64,7 @@ DtlsConnection* get_connection(DtlsServer* server, const char* address, int port
  *
  * @param server Uninitialized server struct
  */
-void server_init(DtlsServer* server, const char* ciphers, const char* certChain, const char* certFile, const char* privKey, int mode)
+void server_init(DtlsServer* server, const char* ciphers, const char* rootChain, const char* serverChain, const char* privKey, int mode)
 {
     if (wolfSSL_Init() != SSL_SUCCESS) {
         err("WolfSSL init error");
@@ -74,24 +74,28 @@ void server_init(DtlsServer* server, const char* ciphers, const char* certChain,
 
     WOLFSSL_CTX* ctx = wolfSSL_CTX_new(wolfDTLSv1_3_server_method());
 
-    if (!certChain || wolfSSL_CTX_load_verify_locations(ctx, certChain, 0) != SSL_SUCCESS) {
-        err("No or invalid certificate chain");
+    if (!rootChain || wolfSSL_CTX_load_verify_locations(ctx, rootChain, 0) != SSL_SUCCESS) {
+        dprint("No or invalid root CA certificate chain");
+        err("No or invalid root CA certificate chain");
     }
 
-    if (wolfSSL_CTX_use_certificate_file(ctx, certFile, SSL_FILETYPE_PEM) != SSL_SUCCESS) {
-        err("No certificate found");
+    if (!serverChain || wolfSSL_CTX_use_certificate_chain_file(ctx, serverChain) != SSL_SUCCESS) {
+        dprint("No or invalid server certificate chain");
+        err("No or invalid server certificate chain");
     }
 
     if (wolfSSL_CTX_use_PrivateKey_file(ctx, privKey, SSL_FILETYPE_PEM) != SSL_SUCCESS) {
+        dprint("No or invalid private key");
         err("No or invalid private key");
     }
 
     if (!ciphers || wolfSSL_CTX_set_cipher_list(ctx, ciphers) != SSL_SUCCESS) {
+        dprint("Missing or invalid ciphersuite list");
         err("Missing or invalid ciphersuite list");
     }
 
     if (mode) {
-        wolfSSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, 0);
+        wolfSSL_CTX_set_verify(ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, 0);
     }
 
     server->ctx = ctx;
@@ -190,19 +194,20 @@ int server_dtls_accept(DtlsServer* server, struct sockaddr* clientSockAddr)
 
     connection->ssl = wolfSSL_new(server->ctx);
     if (!connection->ssl) {
-        dprint("Failed to allocate new client\n");
+        int errCode = wolfSSL_get_error(connection->ssl, 0);
+        dprint("Failed to allocate new client, error = %d, %s", errCode, wolfSSL_ERR_reason_error_string(errCode));
         server_connection_free(connection);
         return -1;
     }
 
     if (wolfSSL_dtls_set_peer(connection->ssl, clientSockAddr, sizeof(*clientSockAddr)) != SSL_SUCCESS) {
-        dprint("Failed to set client peer\n");
+        dprint("Failed to set client peer");
         server_connection_free(connection);
         return -1;
     }
 
     if (wolfSSL_set_fd(connection->ssl, server->socket) != SSL_SUCCESS) {
-        dprint("Failed to bind new connection to socket\n");
+        dprint("Failed to bind new connection to socket");
         server_connection_free(connection);
         return -1;
     }
@@ -218,6 +223,7 @@ int server_dtls_accept(DtlsServer* server, struct sockaddr* clientSockAddr)
     connection->port = ntohs(((struct sockaddr_in*)clientSockAddr)->sin_port);
 
     printf("New connection from %s:%d with hash of (%zu)\n", connection->address, connection->port, hash_connection(connection->address, connection->port) % server->connections->size);
+    info_print_connection_summary(connection->ssl);
     info_print_ssl_summary(connection->ssl);
 
     node* clientNode = calloc(1, sizeof(node));

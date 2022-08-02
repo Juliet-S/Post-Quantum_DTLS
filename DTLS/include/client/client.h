@@ -1,13 +1,6 @@
 #ifndef PQDTLS_CLIENT_H
 #define PQDTLS_CLIENT_H
 
-#if WIN32
-#define WOLFSSL_USER_SETTINGS
-#endif
-
-#include <wolfssl/wolfcrypt/settings.h>
-#include <wolfssl/ssl.h>
-
 #include "common/dtls.h"
 
 typedef struct dtlsClient_h {
@@ -17,7 +10,7 @@ typedef struct dtlsClient_h {
     int socket;
 } DtlsClient;
 
-void client_init(DtlsClient* client, const char* certChain, const char* clientCert, const char* clientKey, int mode);
+void client_init(DtlsClient* client, const char* rootChain, const char* clientChain, const char* clientKey);
 int client_connection_setup(DtlsClient* client, const char* address, int port);
 void client_connection_loop(DtlsClient* client);
 

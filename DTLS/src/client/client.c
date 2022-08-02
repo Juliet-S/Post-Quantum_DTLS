@@ -12,8 +12,9 @@
 
 #include "client/client.h"
 #include "common/info.h"
+#include "common/debug.h"
 
-void client_init(DtlsClient* client, const char* certChain, const char* clientCert, const char* clientKey, int mode)
+void client_init(DtlsClient* client, const char* rootChain, const char* clientChain, const char* clientKey)
 {
     if (wolfSSL_Init() != SSL_SUCCESS) {
         err("WolfSSL init error");
@@ -23,17 +24,22 @@ void client_init(DtlsClient* client, const char* certChain, const char* clientCe
 
     WOLFSSL_CTX* ctx = wolfSSL_CTX_new(wolfDTLSv1_3_client_method());
 
-    if (!certChain || wolfSSL_CTX_load_verify_locations(ctx, certChain, 0) != SSL_SUCCESS) {
-        err("Root CA certificate invalid");
+    if (!rootChain || wolfSSL_CTX_load_verify_locations(ctx, rootChain, 0) != SSL_SUCCESS) {
+        dprint("Root CA chain certificate invalid");
+        err("Root CA chain certificate invalid");
     }
 
-    if (clientCert && wolfSSL_CTX_use_certificate_file(ctx, clientCert, SSL_FILETYPE_PEM) != SSL_SUCCESS) {
-        printf("Client certificate not found\n");
+    if (clientChain && wolfSSL_CTX_use_certificate_chain_file(ctx, clientChain) != SSL_SUCCESS) {
+        dprint("Client certificate chain invalid");
+        printf("Client certificate chain invalid\n");
     }
 
     if (clientKey && wolfSSL_CTX_use_PrivateKey_file(ctx, clientKey, SSL_FILETYPE_PEM) != SSL_SUCCESS) {
-        printf("Client private key not found\n");
+        dprint("Client private key not found or invalid");
+        printf("Client private key not found or invalid\n");
     }
+
+    wolfSSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, 0);
 
     client->ctx = ctx;
 }
@@ -86,7 +92,7 @@ int client_connection_setup(DtlsClient* client, const char* address, int port)
     client->socket = fd;
     client->remote = remote;
 
-    info_print_server_summary(client);
+    info_print_connection_summary(client->ssl);
     info_print_ssl_summary(ssl);
 
     return ret;

@@ -8,12 +8,12 @@ void info_print_ssl_summary(WOLFSSL* con) {
     printf("\tCiphersuite: %s\n", cipherName);
 }
 
-void info_print_server_summary(DtlsClient* client)
+void info_print_connection_summary(WOLFSSL* ssl)
 {
-    WOLFSSL_X509* certificate = wolfSSL_get_peer_certificate(client->ssl);
+    WOLFSSL_X509* certificate = wolfSSL_get_peer_certificate(ssl);
     int signatureType = wolfSSL_X509_get_signature_type(certificate);
 
-    printf("Server Certificate Settings:\n");
+    printf("Peer Certificate Settings:\n");
     printf("\tIssuer: %s\n", wolfSSL_X509_NAME_oneline(wolfSSL_X509_get_issuer_name(certificate), 0, 0));
     printf("\tSubject Name: %s\n", wolfSSL_X509_NAME_oneline(wolfSSL_X509_get_subject_name(certificate), 0, 0));
 }

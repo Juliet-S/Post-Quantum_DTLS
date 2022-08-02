@@ -9,12 +9,12 @@ void opt_err(char** argv)
     exit(EXIT_FAILURE);
 }
 
-void parse_opt(int argc, char** argv, char** certChain, char** certFile, char** privateKey)
+void parse_opt(int argc, char** argv, char** rootChain, char** certChain, char** privateKey)
 {
     for (int i = 2; i < argc; i++) {
-        //Certificate
-        if (strcmp("-cert", argv[i]) == 0 && (i + 1) <= argc) {
-            *certFile = argv[i+1];
+        //Root Certificate Chain
+        if (strcmp("-root", argv[i]) == 0 && (i + 1) <= argc) {
+            *rootChain = argv[i+1];
             i++;
         }
         //Private key
@@ -55,11 +55,11 @@ void parse_address(char* address, int* port) {
 
 int main(int argc, char** argv)
 {
-    fdprint(stdout, "Debug build\n");
+    fdprint(stdout, "Debug build");
 
     DtlsClient client = {0};
-    char* certChain = NULL;           // certs/bundle.pem
-    char* clientCert = NULL;          // certs/client.crt
+    char* rootChain = NULL;           // certs/ca.crt or certs/intermediate.pem
+    char* clientChain = NULL;         // certs/c_bundle.pem
     char* clientKey = NULL;           // certs/client.key
 
     if (argc <= 1) {
@@ -68,22 +68,22 @@ int main(int argc, char** argv)
 
     char* address = argv[1];
     int port = 8443;
-    parse_opt(argc, argv, &certChain, &clientCert, &clientKey);
+    parse_opt(argc, argv, &rootChain, &clientChain, &clientKey);
     parse_address(address, &port);
 
     if (port == 0) {
         err("Invalid IP Address");
     }
 
-    printf("Settings:\n\tAddress: %s\n\tPort: %d\n\tCertificate File: %s\n\tCertificate Key File: %s\n\tCertificate Chain File: %s\n",
-           address, port, clientCert, clientKey, certChain);
+    printf("Settings:\n\tAddress: %s\n\tPort: %d\n\tRoot Certificate Chain: %s\n\tCertificate Key File: %s\n\tClient Certificate Chain: %s\n",
+           address, port, rootChain, clientKey, clientChain);
 
 #if WIN32
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
 #endif
 
-    client_init(&client, certChain, clientCert, clientKey, SSL_VERIFY_PEER);
+    client_init(&client, rootChain, clientChain, clientKey);
 
     double startTime = (double)clock() / CLOCKS_PER_SEC;
     client_connection_setup(&client, address, port);
