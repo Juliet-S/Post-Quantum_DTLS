@@ -81,11 +81,15 @@ int client_connection_setup(DtlsClient* client, const char* address, int port)
         err("Cannot set socket file descriptor");
     }
 
-    if (wolfSSL_connect(ssl) != SSL_SUCCESS) {
-        int errCode = wolfSSL_get_error(ssl, 0);
-        fprintf(stderr, "err = %d, %s\n", errCode, wolfSSL_ERR_reason_error_string(errCode));
-        ret = -1;
-        err("wolfSSL connect failed");
+    int connect = wolfSSL_connect(ssl);
+    if (connect != SSL_SUCCESS) {
+        int errCode = wolfSSL_get_error(ssl, connect);
+        if (errCode != SSL_ERROR_NONE && errCode != SSL_ERROR_ZERO_RETURN) {
+            fprintf(stderr, "err = %d, %s\n", errCode, wolfSSL_ERR_reason_error_string(errCode));
+            ret = -1;
+            fdprint(stderr, "err = %d", errCode);
+            err("wolfSSL connect failed");
+        }
     }
 
     client->ssl = ssl;
@@ -162,7 +166,12 @@ void client_connection_loop(DtlsClient* client)
             break;
         }
 
-        printf("%s:%d> %.8s ... (%zu)\n", address, port, recvBuffer, strnlen(recvBuffer, MAX_PACKET_SIZE));
+//        printf("%s:%d> %.8s ... (%zu)\n", address, port, recvBuffer, strnlen(recvBuffer, MAX_PACKET_SIZE));
+
+        if (strncmp(sendBuffer, recvBuffer, MAX_PACKET_SIZE) != 0) {
+            printf("Dropped packet\n");
+        }
+
 #if WIN32
         Sleep(1000);
 #else

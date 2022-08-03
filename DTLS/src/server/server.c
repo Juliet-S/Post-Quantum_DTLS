@@ -172,7 +172,7 @@ void server_connection_loop(DtlsServer* server)
                 continue;
             }
 
-            printf("%s:%d> %.8s ... (%zu)\n", address, port, packetBuffer, strnlen(packetBuffer, MAX_PACKET_SIZE));
+//            printf("%s:%d> %.8s ... (%zu)\n", address, port, packetBuffer, strnlen(packetBuffer, MAX_PACKET_SIZE));
             dtls_send(connection->ssl, packetBuffer, strnlen(packetBuffer, MAX_PACKET_SIZE));
         }
         else {
@@ -180,6 +180,8 @@ void server_connection_loop(DtlsServer* server)
         }
     }
 }
+
+int count = 0;
 
 /**
  * Try and accept a new client
@@ -212,11 +214,14 @@ int server_dtls_accept(DtlsServer* server, struct sockaddr* clientSockAddr)
         return -1;
     }
 
-    if (!wolfSSL_dtls(connection->ssl) || wolfSSL_accept(connection->ssl) != SSL_SUCCESS) {
-        int errCode = wolfSSL_get_error(connection->ssl, 0);
-        dprint("Connection failed, error = %d, %s", errCode, wolfSSL_ERR_reason_error_string(errCode));
-        server_connection_free(connection);
-        return -1;
+    int accept = wolfSSL_accept(connection->ssl);
+    if (!wolfSSL_dtls(connection->ssl) || accept != SSL_SUCCESS) {
+        int errCode = wolfSSL_get_error(connection->ssl, accept);
+        if (errCode != SSL_ERROR_WANT_READ) {
+            dprint("Connection failed, error = %d, %s", errCode, wolfSSL_ERR_reason_error_string(errCode));
+            server_connection_free(connection);
+            return -1;
+        }
     }
 
     inet_ntop(AF_INET, &((struct sockaddr_in*)clientSockAddr)->sin_addr, connection->address, INET_ADDRSTRLEN);
@@ -229,6 +234,9 @@ int server_dtls_accept(DtlsServer* server, struct sockaddr* clientSockAddr)
     node* clientNode = calloc(1, sizeof(node));
     clientNode->data = (void*)connection;
     hashtable_add(server->connections, hash_connection(connection->address, connection->port), clientNode);
+
+    count++;
+    printf("count: %d\n", count);
 
     return 1;
 }
