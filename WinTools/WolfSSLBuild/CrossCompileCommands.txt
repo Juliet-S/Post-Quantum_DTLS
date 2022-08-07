@@ -1,0 +1,9 @@
+Compile for ARM64 Prerequisites:
+    1. Linux with `aarch64-linux-gnu-{gcc,g++}` installed (Windows just use WSL2)
+    2. Cross compile libs installed (dpkg --add-architecture <arch>) <arch> = arm64 in this case
+
+1. cd wolfssl
+2. make clean
+3. ./configure --host=aarch64-linux-gnu --prefix=/usr/local/wolfsslarm64 --disable-shared --enable-dtls13 --enable-dtls --enable-opensslextra LDFLAGS=-static
+4. make -j<#cores>
+5. sudo make install
