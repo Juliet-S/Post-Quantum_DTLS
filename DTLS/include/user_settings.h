@@ -17,6 +17,12 @@
 #define HAVE_HKDF
 #define HAVE_FFDHE_2048
 #define WC_RSA_PSS
+#define WOLFSSL_SP
+#define WOLFSSL_SP_SMALL      /* use smaller version of code */
+#define WOLFSSL_HAVE_SP_RSA
+#define WOLFSSL_HAVE_SP_DH
+#define WOLFSSL_HAVE_SP_ECC
+#define WOLFSSL_SP_4096       /* enable 4096-bit */
 
 /* DTLS configuration */
 
