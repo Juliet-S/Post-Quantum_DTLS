@@ -4,3 +4,6 @@
 [submodule "wolfssl"]
 	path = wolfssl
 	url = git@github.com:wolfSSL/wolfssl.git
+[submodule "liboqs"]
+	path = liboqs
+	url = git@github.com:open-quantum-safe/liboqs.git
