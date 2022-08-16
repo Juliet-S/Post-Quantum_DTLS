@@ -23,6 +23,7 @@
 #define WOLFSSL_HAVE_SP_DH
 #define WOLFSSL_HAVE_SP_ECC
 #define WOLFSSL_SP_4096       /* enable 4096-bit */
+#define OPENSSL_EXTRA
 
 /* DTLS configuration */
 

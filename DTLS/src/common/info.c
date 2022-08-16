@@ -1,3 +1,4 @@
+#include <wolfssl/ssl.h>
 #include "common/info.h"
 
 void info_print_ssl_summary(WOLFSSL* con) {
@@ -11,9 +12,14 @@ void info_print_ssl_summary(WOLFSSL* con) {
 void info_print_connection_summary(WOLFSSL* ssl)
 {
     WOLFSSL_X509* certificate = wolfSSL_get_peer_certificate(ssl);
-    int signatureType = wolfSSL_X509_get_signature_type(certificate);
+
+    char* issuer = wolfSSL_X509_NAME_oneline(wolfSSL_X509_get_issuer_name(certificate), 0, 0);
+    char* subject = wolfSSL_X509_NAME_oneline(wolfSSL_X509_get_subject_name(certificate), 0, 0);
 
     printf("Peer Certificate Settings:\n");
-    printf("\tIssuer: %s\n", wolfSSL_X509_NAME_oneline(wolfSSL_X509_get_issuer_name(certificate), 0, 0));
-    printf("\tSubject Name: %s\n", wolfSSL_X509_NAME_oneline(wolfSSL_X509_get_subject_name(certificate), 0, 0));
+    printf("\tIssuer: %s\n", issuer);
+    printf("\tSubject Name: %s\n", subject);
+
+    XFREE(subject, 0, DYNAMIC_TYPE_OPENSSL);
+    XFREE(issuer,  0, DYNAMIC_TYPE_OPENSSL);
 }
