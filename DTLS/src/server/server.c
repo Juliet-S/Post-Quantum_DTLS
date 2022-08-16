@@ -1,5 +1,5 @@
 #if WIN32
- #include <winsock2.h>
+ #include <Winsock2.h>
  #include <WS2tcpip.h>
 #else
  #include <unistd.h>

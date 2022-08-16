@@ -13,7 +13,9 @@ static void interrupt_handler(int _) {
 
 void opt_err(char** argv)
 {
-    fprintf(stderr, "Usage: %s -cipher [string] -chain [file] -key [file] -port [int] -verify\n", argv[0]);
+    fprintf(stderr, "Usage: %s -cipher [string] -key [file] -root [file] -chain [file] -port [int] -verify [optional]\n"
+                            "\tExample: %s -cipher \"TLS_AES_256_GCM_SHA384\" -key certs/server.key -root certs/intermediate.pem -chain certs/s_bundle.pem -port 8443 -verify",
+                            argv[0], argv[0]);
     exit(EXIT_FAILURE);
 }
 

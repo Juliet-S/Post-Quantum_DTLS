@@ -5,7 +5,8 @@
 
 void opt_err(char** argv)
 {
-    fprintf(stderr, "Usage: %s <IP Address>:<Port> -cert [file] -key [file] -chain [file]\n", argv[0]);
+    fprintf(stderr, "Usage: %s <IP Address>:<Port> -cert [file] -key [file] -chain [file]\n"
+                            "\tExample: %s 127.0.0.1:8443 -chain [file] -key [file] -root [file]", argv[0], argv[0]);
     exit(EXIT_FAILURE);
 }
 
