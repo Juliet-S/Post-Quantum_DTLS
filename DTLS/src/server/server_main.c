@@ -19,7 +19,7 @@ void opt_err(char** argv)
     exit(EXIT_FAILURE);
 }
 
-void parse_opt(int argc, char** argv, char** cipher, char** rootChain, char** privateKey, char** serverChain, int* port, int* verifyClient)
+void parse_opt(int argc, char** argv, char** cipher, char** rootChain, char** privateKey, char** serverChain, char** groups, int* port, int* verifyClient)
 {
     for (int i = 1; i < argc; i++) {
         //Cipher
@@ -40,6 +40,11 @@ void parse_opt(int argc, char** argv, char** cipher, char** rootChain, char** pr
         //Root CA Certificate chain
         else if (strcmp("-root", argv[i]) == 0 && (i + 1) <= argc) {
             *rootChain = argv[i + 1];
+            i++;
+        }
+        //Groups
+        else if (strcmp("-group", argv[i]) == 0 && (i + 1) <= argc) {
+            *groups = argv[i + 1];
             i++;
         }
         //Port
@@ -65,10 +70,11 @@ int main(int argc, char** argv)
     char* cipher = NULL;                  // TLS_RSA_WITH_AES_128_GCM_SHA256
     char* rootChain = NULL;               // certs/ca.crt or certs/intermediate.pem
     char* privateKey = NULL;              // certs/server.key
-    char* serverChain = NULL;              // certs/s_bundle.pem
+    char* serverChain = NULL;             // certs/s_bundle.pem
+    char* groups = NULL;                  // KYBER_LEVEL3
     int verifyClient = 0;
 
-    parse_opt(argc, argv, &cipher, &rootChain, &privateKey, &serverChain, &port, &verifyClient);
+    parse_opt(argc, argv, &cipher, &rootChain, &privateKey, &serverChain, &groups, &port, &verifyClient);
     if (!cipher || !rootChain || !privateKey || !serverChain || port == 0)
         opt_err(argv);
 
@@ -81,7 +87,7 @@ int main(int argc, char** argv)
     WSAStartup(MAKEWORD(2, 2), &wsaData);
 #endif
 
-    server_init(&server, cipher, rootChain, serverChain, privateKey, verifyClient);
+    server_init(&server, cipher, rootChain, serverChain, privateKey, groups, verifyClient);
     server_connection_setup(&server, port, tablesize, (void *(*)(void *)) &server_connection_free);
     server_connection_loop(&server);
     server_free(&server);

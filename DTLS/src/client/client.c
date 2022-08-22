@@ -72,6 +72,12 @@ int client_connection_setup(DtlsClient* client, const char* address, int port)
     int fd = new_socket((const struct sockaddr*)&local);
 
     WOLFSSL* ssl = wolfSSL_new(client->ctx);
+    if (!ssl) {
+        int errCode = wolfSSL_get_error(ssl, 0);
+        dprint("Failed to allocate new client, error = %d, %s", errCode, wolfSSL_ERR_reason_error_string(errCode));
+        client_free(client);
+        return -1;
+    }
 
     if (wolfSSL_dtls_set_peer(ssl, &(remote.s4), sizeof(remote.s4)) != SSL_SUCCESS) {
         err("Set peer failed");

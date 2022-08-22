@@ -64,7 +64,7 @@ DtlsConnection* get_connection(DtlsServer* server, const char* address, int port
  *
  * @param server Uninitialized server struct
  */
-void server_init(DtlsServer* server, const char* ciphers, const char* rootChain, const char* serverChain, const char* privKey, int mode)
+void server_init(DtlsServer* server, const char* ciphers, const char* rootChain, const char* serverChain, const char* privKey, char* groups, int mode)
 {
     if (wolfSSL_Init() != SSL_SUCCESS) {
         err("WolfSSL init error");
@@ -201,6 +201,12 @@ int server_dtls_accept(DtlsServer* server, struct sockaddr* clientSockAddr)
         server_connection_free(connection);
         return -1;
     }
+
+//    int ret;
+//    if ((ret = wolfSSL_UseKeyShare(connection->ssl, WOLFSSL_KYBER_LEVEL5)) != WOLFSSL_SUCCESS) {
+//        int errCode = wolfSSL_get_error(connection->ssl, ret);
+//        dprint("Set keyshare failed, error = %d, %s", errCode, wolfSSL_ERR_reason_error_string(errCode));
+//    }
 
     if (wolfSSL_dtls_set_peer(connection->ssl, clientSockAddr, sizeof(*clientSockAddr)) != SSL_SUCCESS) {
         dprint("Failed to set client peer");
