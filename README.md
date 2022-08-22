@@ -44,12 +44,14 @@ From root dir:
 cd wolfssl
 make clean
 ./configure --disable-shared --enable-dtls13 --enable-dtls --enable-opensslextra --enable-sp=yes --with-liboqs=/usr/local/liboqs LDFLAGS=-static
+make -j
+sudo make install
 ```
 
 3. Building
 
 - Open in CLion
-- Specify 
+- Specify `WOLFSSL_LIBRARIES`, `WOLFSSL_INCLUDE_DIR` locations (if not on path)
 
 OR
 
@@ -81,6 +83,7 @@ Open in Visual Studio and run `ALL_BUILD` and `INSTALL` or Use commandline `msbu
 
 - Open `wolfssl64.sln` in Visual Studio, 
 - Retarget for your `VC++` redistributible version e.g VC142
+- Update `/IDE/win/user_settings.h` with contents from `DTLS/include/user_settings.h`
 - Change configuration target to Debug/Release static library
 - Rebuild `wolfssl` project
 - Keep note of where `wolfssl.lib` is: e.g `wolfssl\Debug\x64\wolfssl.lib`
