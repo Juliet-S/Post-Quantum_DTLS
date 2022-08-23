@@ -24,7 +24,7 @@
 #define WOLFSSL_HAVE_SP_ECC
 #define WOLFSSL_SP_4096       /* enable 4096-bit */
 #define OPENSSL_EXTRA
-#define HAVE_PQC
+#define HAVE_LIBOQS
 #define HAVE_KYBER
 #define HAVE_DILITHIUM
 
