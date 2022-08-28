@@ -2,11 +2,9 @@
 #include "common/info.h"
 
 void info_print_ssl_summary(WOLFSSL* con) {
-    WOLFSSL_CIPHER* cipher = wolfSSL_get_current_cipher(con);
-    const char* cipherName = wolfSSL_CIPHER_get_name(cipher);
-
     printf("\tProtocol version: %s\n", wolfSSL_get_version(con));
-    printf("\tCiphersuite: %s\n", cipherName);
+    printf("\tCiphersuite: %s\n", wolfSSL_get_cipher(con));
+    printf("\tCurve: %s\n", wolfSSL_get_curve_name(con));
 }
 
 void info_print_connection_summary(WOLFSSL* ssl)
@@ -19,6 +17,7 @@ void info_print_connection_summary(WOLFSSL* ssl)
     printf("Peer Certificate Settings:\n");
     printf("\tIssuer: %s\n", issuer);
     printf("\tSubject Name: %s\n", subject);
+    printf("\tPublic Key OID: %d\n", wolfSSL_X509_get_pubkey_type(certificate));
 
     XFREE(subject, 0, DYNAMIC_TYPE_OPENSSL);
     XFREE(issuer,  0, DYNAMIC_TYPE_OPENSSL);

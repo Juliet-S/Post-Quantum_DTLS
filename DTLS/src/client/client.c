@@ -51,7 +51,7 @@ void client_init(DtlsClient* client, const char* rootChain, const char* clientCh
  * @param port
  * @return 0 on success, nonzero otherwise
  */
-int client_connection_setup(DtlsClient* client, const char* address, int port)
+int client_connection_setup(DtlsClient* client, const char* address, int port, int group)
 {
     int ret = 0;
     SockAddress local = {
@@ -77,6 +77,12 @@ int client_connection_setup(DtlsClient* client, const char* address, int port)
         dprint("Failed to allocate new client, error = %d, %s", errCode, wolfSSL_ERR_reason_error_string(errCode));
         client_free(client);
         return -1;
+    }
+
+    if (wolfSSL_UseKeyShare(ssl, group) != WOLFSSL_SUCCESS) {
+        int errCode = wolfSSL_get_error(ssl, 0);
+        dprint("Set keyshare failed, error = %d, %s", errCode, wolfSSL_ERR_reason_error_string(errCode));
+        err("Use keyshare failed");
     }
 
     if (wolfSSL_dtls_set_peer(ssl, &(remote.s4), sizeof(remote.s4)) != SSL_SUCCESS) {
