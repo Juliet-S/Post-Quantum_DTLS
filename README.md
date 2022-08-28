@@ -32,7 +32,7 @@ From root dir:
 ```
 cd liboqs
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX="/usr/local/liboqs"
+cmake -DOQS_USE_OPENSSL=0 -DCMAKE_INSTALL_PREFIX="/usr/local/liboqs" ..
 make -j
 sudo make install
 ```
@@ -62,6 +62,7 @@ mkdir build
 cd build
 cmake .. -DWOLFSSL_LIBRARIES="/usr/local/wolfssl/lib/wolfssl.a" \ 
           -DWOLFSSL_INCLUDE_DIR="/usr/local/wolfssl/include" \
+          -DLIBOQS_LIBRARIES="/usr/local/liboqs/lib/liboqs.a" \
           -DDEBUG=1
 make -j
 ```
@@ -74,7 +75,7 @@ From root dir:
 ```
 cd liboqs
 mkdir build && cd build
-cmake .. -D "CMAKE_INSTALL_PREFIX:PATH=path/to/your/install"
+cmake -D "CMAKE_INSTALL_PREFIX:PATH=path/to/your/install" -D "OQS_USE_OPENSSL=0" ..
 ```
 
 Open in Visual Studio and run `ALL_BUILD` and `INSTALL` or Use commandline `msbuild`
@@ -101,10 +102,11 @@ mkdir build
 cd build
 cmake .. -DWOLFSSL_LIBRARIES="/path/to/wolfssl.lib" \ 
           -DWOLFSSL_INCLUDE_DIR="/path/to/wolfssl/include/headers" \
+          -DLIBOQS_LIBRARIES="/usr/local/liboqs/lib/liboqs.a"
           -DDEBUG=1
 ```
 
-Open in Visual Studio and run `ALL_BUILD` or Use commandline `msbuild`
+Open in Visual Studio and run `ALL_BUILD` or use commandline `msbuild`
 
 ## Linux ARM64 / ARMHF Partial Instructions
 
@@ -118,11 +120,24 @@ Compile for ARMHF Preqrequisites:
 
 Example for ARM64:
 1. Cross compile LibOQS for ARM64
+
+```
+cd liboqs
+mkdir buildarm64
+cd buildarm64
+cmake -DCMAKE_TOOLCHAIN_FILE=../.CMake/toolchain_arm64.cmake -GNinja -DOQS_USE_OPENSSL=OFF -DCMAKE_INSTALL_PREFIX=/usr/local/liboqsarm64 ..
+ninja
+sudo ninja install
+```
+
 2. Cross Compile WolfSSL for ARM64
+
 ```
 cd wolfssl
 make clean
-./configure --host=aarch64-linux-gnu --prefix=/usr/local/wolfsslarm64 --disable-shared --enable-dtls13 --enable-dtls --enable-opensslextra --enable-sp=yes LDFLAGS=-static
+./configure --host=aarch64-linux-gnu --prefix=/usr/local/wolfsslarm64 --disable-shared \
+            --enable-dtls13 --enable-dtls --enable-opensslextra \
+            --enable-sp=yes --with-liboqs=/usr/local/liboqsarm64 LDFLAGS=-static
 make -j
 sudo make install
 ```
@@ -137,6 +152,7 @@ Example Config for (Debug) Windows x64:
 "Visual Studio 16 2019"
 -DWOLFSSL_LIBRARIES="path\to\wolfssl\Debug\x64\wolfssl.lib"
 -DWOLFSSL_INCLUDE_DIR="path\to\wolfssl"
+-DLIBOQS_LIBRARIES="path\to\liboqs.lib
 -DDEBUG=1
 ```
 
@@ -145,6 +161,7 @@ Example Config for (Debug) Linux x64:
 ```
 -DWOLFSSL_LIBRARIES="/usr/local/wolfssl/lib/libwolfssl.a"
 -DWOLFSSL_INCLUDE_DIR="/usr/local/wolfssl/include"
+-DLIBOQS_LIBRARIES="/usr/local/liboqs/lib/liboqs.a"
 -DDEBUG=1
 ```
 
@@ -153,6 +170,7 @@ Example Config for (Release) Linux ARM64
 ```
 -DWOLFSSL_LIBRARIES="/usr/local/wolfsslarm64/lib/libwolfssl.a"
 -DWOLFSSL_INCLUDE_DIR="/usr/local/wolfsslarm64/include"
+-DLIBOQS_LIBRARIES="/usr/local/liboqsarm64/lib/liboqs.a"
 ```
 
 ## Running
