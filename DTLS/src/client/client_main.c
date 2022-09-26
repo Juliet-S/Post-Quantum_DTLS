@@ -129,7 +129,7 @@ int main(int argc, char** argv)
     double endTime = (double)clock() / CLOCKS_PER_SEC;
     printf("\tTime to connect: %lf\n", endTime - startTime);
 
-//    client_connection_loop(&client);
+    client_connection_loop(&client);
     client_free(&client);
 
 #if WIN32
