@@ -42,11 +42,15 @@ sudo make install
 From root dir:
 ```
 cd wolfssl
+git checkout 43388186bb47e18b79b4b66cc786e4e60936c5ee
 make clean
 ./configure --disable-shared --enable-dtls13 --enable-dtls --enable-opensslextra --enable-sp=yes --with-liboqs=/usr/local/liboqs LDFLAGS=-static
 make -j
 sudo make install
 ```
+
+*Note that the `git checkout` step is optional, however it's been noted that WolfSSL has broken/fixed the post-quantum implementation 
+a few times and so the current version may be unstable. This commit is a known working commit.
 
 3. Building
 
@@ -60,10 +64,10 @@ From root dir:
 cd DTLS
 mkdir build
 cd build
-cmake .. -DWOLFSSL_LIBRARIES="/usr/local/wolfssl/lib/wolfssl.a" \ 
+cmake -DWOLFSSL_LIBRARIES="/usr/local/wolfssl/lib/wolfssl.a" \ 
           -DWOLFSSL_INCLUDE_DIR="/usr/local/wolfssl/include" \
           -DLIBOQS_LIBRARIES="/usr/local/liboqs/lib/liboqs.a" \
-          -DDEBUG=1
+          -DDEBUG=1 ..
 make -j
 ```
 
@@ -100,10 +104,10 @@ From root dir:
 cd DTLS
 mkdir build
 cd build
-cmake .. -DWOLFSSL_LIBRARIES="/path/to/wolfssl.lib" \ 
+cmake -DWOLFSSL_LIBRARIES="/path/to/wolfssl.lib" \ 
           -DWOLFSSL_INCLUDE_DIR="/path/to/wolfssl/include/headers" \
           -DLIBOQS_LIBRARIES="/usr/local/liboqs/lib/liboqs.a"
-          -DDEBUG=1
+          -DDEBUG=1 ..
 ```
 
 Open in Visual Studio and run `ALL_BUILD` or use commandline `msbuild`
