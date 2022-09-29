@@ -5,8 +5,8 @@
 
 void opt_err(char** argv)
 {
-    fprintf(stderr, "Usage: %s <IP Address>:<Port> -cert [file] -key [file] -chain [file]\n"
-                            "\tExample: %s 127.0.0.1:8443 -chain [file] -key [file] -root [file]", argv[0], argv[0]);
+    fprintf(stderr, "Usage: %s <IP Address>:<Port> -key [file] -root [file] -chain [file] -group [kem_name]\n"
+                            "\tExample: %s 127.0.0.1:8443 -key certs/client.key -root certs/intermediate.pem -chain certs/c_bundle.pem -group KYBER_LEVEL5", argv[0], argv[0]);
     exit(EXIT_FAILURE);
 }
 
