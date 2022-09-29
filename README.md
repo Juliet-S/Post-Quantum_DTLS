@@ -26,11 +26,19 @@ General steps:
 
 ### Linux x64
 
-1. Building LibOQS
+0. Initializing repo
+
+```
+git submodule init
+git submodule update
+```
+
+2. Building LibOQS
 
 From root dir:
 ```
 cd liboqs
+git checkout af76ca3b1f2fbc1f4f0967595f3bb07692fb3d82
 mkdir build && cd build
 cmake -DOQS_USE_OPENSSL=0 -DCMAKE_INSTALL_PREFIX="/usr/local/liboqs" ..
 make -j
@@ -78,6 +86,7 @@ make -j
 From root dir:
 ```
 cd liboqs
+git checkout af76ca3b1f2fbc1f4f0967595f3bb07692fb3d82
 mkdir build && cd build
 cmake -D "CMAKE_INSTALL_PREFIX:PATH=path/to/your/install" -D "OQS_USE_OPENSSL=0" ..
 ```
@@ -86,6 +95,8 @@ Open in Visual Studio and run `ALL_BUILD` and `INSTALL` or Use commandline `msbu
 
 2. Building WolfSSL
 
+- `cd wolfssl`
+- `git checkout 43388186bb47e18b79b4b66cc786e4e60936c5ee`
 - Open `wolfssl64.sln` in Visual Studio, 
 - Retarget for your `VC++` redistributible version e.g VC142
 - Update `/IDE/win/user_settings.h` with contents from `DTLS/include/user_settings.h`
@@ -127,6 +138,7 @@ Example for ARM64:
 
 ```
 cd liboqs
+git checkout af76ca3b1f2fbc1f4f0967595f3bb07692fb3d82
 mkdir buildarm64
 cd buildarm64
 cmake -DCMAKE_TOOLCHAIN_FILE=../.CMake/toolchain_arm64.cmake -GNinja -DOQS_USE_OPENSSL=OFF -DCMAKE_INSTALL_PREFIX=/usr/local/liboqsarm64 ..
@@ -138,6 +150,7 @@ sudo ninja install
 
 ```
 cd wolfssl
+git checkout 43388186bb47e18b79b4b66cc786e4e60936c5ee
 make clean
 ./configure --host=aarch64-linux-gnu --prefix=/usr/local/wolfsslarm64 --disable-shared \
             --enable-dtls13 --enable-dtls --enable-opensslextra \
